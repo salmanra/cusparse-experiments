@@ -1,0 +1,35 @@
+cmake_minimum_required(VERSION 3.18)
+project(cusparse_spmm CUDA CXX)
+
+# Set CUDA standard
+set(CMAKE_CUDA_STANDARD 17)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Find CUDA Toolkit (provides cuSPARSE)
+find_package(CUDAToolkit REQUIRED)
+
+# Create executable
+add_executable(spmm_demo
+    src/main.cu
+)
+
+# Link cuSPARSE library
+target_link_libraries(spmm_demo
+    CUDA::cusparse
+    CUDA::cudart
+)
+
+# Include directories
+target_include_directories(spmm_demo PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+# Set CUDA architectures (adjust for your GPU)
+set_target_properties(spmm_demo PROPERTIES
+    CUDA_ARCHITECTURES "70;75;80;86;89;90"
+)
+
+# Optional: Enable verbose output during build
+set(CMAKE_VERBOSE_MAKEFILE OFF)
