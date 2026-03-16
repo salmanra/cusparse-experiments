@@ -142,9 +142,9 @@ void run_registry(const char* registry_name,
 
         float elapsed_ms = run_spmm(bsr, dense);
         // TODO: print TFLOPS and GB/s
-        float flops = 2.0f * bsr.nblocks * bsr.block_size * bsr.block_size * dense.W;
+        float flops = 2.0f * bsr.nblocks * bsr.R * bsr.C * dense.W;
         float tflops = flops / 1e12 / (elapsed_ms / 1e3);
-        float bytes = (bsr.nblocks * bsr.block_size * bsr.block_size + bsr.nblocks * 2) * sizeof(float) +  // values + row_offsets + col_indices
+        float bytes = (bsr.nblocks * bsr.R * bsr.C + bsr.nblocks * 2) * sizeof(float) +  // values + row_offsets + col_indices
                       (bsr.W * dense.W + bsr.H * dense.W) * sizeof(float);  // B and C
         float gbps = bytes / (elapsed_ms / 1e3) / 1e9;  
         printf("%.3f ms\n", elapsed_ms);
