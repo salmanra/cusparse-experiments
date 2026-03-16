@@ -3,178 +3,230 @@
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
+#include <string>
+#include <chrono>
 
 #include "cuda_utils.h"
+#include "cuda_profiling_suite.hpp"
 
-// SpMM: C = alpha * A * B + beta * C
-// A: sparse matrix (m x k) in CSR format
-// B: dense matrix (k x n)
-// C: dense matrix (m x n)
+// Run cuSPARSE CSR SpMM for a single profile case.
+// Returns elapsed time in milliseconds.
+float run_spmm(const cuda_bsr_matrix<float>& bsr, const cuda_dense_matrix<float>& B) {
+    // Convert BSR to CSR
+    auto csr = bsr.to_csr();
 
-int main(int argc, char* argv[]) {
-    // Matrix dimensions
-    const int m = 4;  // rows of A and C
-    const int k = 4;  // cols of A, rows of B
-    const int n = 3;  // cols of B and C
+    const int m = bsr.H;   // rows of A and C
+    const int k = bsr.W;   // cols of A, rows of B
+    const int n = B.W;     // cols of B and C
+    const int nnz = csr.nnz;
 
-    // Scalars for SpMM: C = alpha * A * B + beta * C
     const float alpha = 1.0f;
     const float beta = 0.0f;
 
-    // Example sparse matrix A in CSR format (4x4)
-    // A = | 1  0  2  0 |
-    //     | 0  3  0  0 |
-    //     | 4  0  5  6 |
-    //     | 0  0  0  7 |
-    const int A_nnz = 7;  // number of non-zeros
-
-    // CSR format: row_offsets, column_indices, values
-    std::vector<int> h_A_row_offsets = {0, 2, 3, 6, 7};
-    std::vector<int> h_A_col_indices = {0, 2, 1, 0, 2, 3, 3};
-    std::vector<float> h_A_values = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f};
-
-    // Dense matrix B (k x n) in column-major order
-    std::vector<float> h_B = {
-        1.0f, 2.0f, 3.0f, 4.0f,  // column 0
-        5.0f, 6.0f, 7.0f, 8.0f,  // column 1
-        9.0f, 10.0f, 11.0f, 12.0f // column 2
-    };
-    const int ldb = k;  // leading dimension of B
-
-    // Dense matrix C (m x n) in column-major order - output
-    std::vector<float> h_C(m * n, 0.0f);
-    const int ldc = m;  // leading dimension of C
-
-    // Device memory pointers
-    int* d_A_row_offsets = nullptr;
-    int* d_A_col_indices = nullptr;
-    float* d_A_values = nullptr;
+    // Device memory
+    int* d_row_offsets = nullptr;
+    int* d_col_indices = nullptr;
+    float* d_values = nullptr;
     float* d_B = nullptr;
     float* d_C = nullptr;
 
-    // Allocate device memory
-    CHECK_CUDA(cudaMalloc(&d_A_row_offsets, (m + 1) * sizeof(int)));
-    CHECK_CUDA(cudaMalloc(&d_A_col_indices, A_nnz * sizeof(int)));
-    CHECK_CUDA(cudaMalloc(&d_A_values, A_nnz * sizeof(float)));
+    CHECK_CUDA(cudaMalloc(&d_row_offsets, (m + 1) * sizeof(int)));
+    CHECK_CUDA(cudaMalloc(&d_col_indices, nnz * sizeof(int)));
+    CHECK_CUDA(cudaMalloc(&d_values, nnz * sizeof(float)));
     CHECK_CUDA(cudaMalloc(&d_B, k * n * sizeof(float)));
     CHECK_CUDA(cudaMalloc(&d_C, m * n * sizeof(float)));
 
-    // Copy data to device
-    CHECK_CUDA(cudaMemcpy(d_A_row_offsets, h_A_row_offsets.data(),
+    CHECK_CUDA(cudaMemcpy(d_row_offsets, csr.row_offsets.data(),
                           (m + 1) * sizeof(int), cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(d_A_col_indices, h_A_col_indices.data(),
-                          A_nnz * sizeof(int), cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(d_A_values, h_A_values.data(),
-                          A_nnz * sizeof(float), cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(d_B, h_B.data(),
+    CHECK_CUDA(cudaMemcpy(d_col_indices, csr.col_indices.data(),
+                          nnz * sizeof(int), cudaMemcpyHostToDevice));
+    CHECK_CUDA(cudaMemcpy(d_values, csr.values.data(),
+                          nnz * sizeof(float), cudaMemcpyHostToDevice));
+    CHECK_CUDA(cudaMemcpy(d_B, B.data.data(),
                           k * n * sizeof(float), cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(d_C, h_C.data(),
-                          m * n * sizeof(float), cudaMemcpyHostToDevice));
+    CHECK_CUDA(cudaMemset(d_C, 0, m * n * sizeof(float)));
 
-    // Create cuSPARSE handle
+    // cuSPARSE setup
     cusparseHandle_t handle = nullptr;
     CHECK_CUSPARSE(cusparseCreate(&handle));
 
-    // Create sparse matrix descriptor for A (CSR format)
     cusparseSpMatDescr_t matA;
     CHECK_CUSPARSE(cusparseCreateCsr(
-        &matA,
-        m, k, A_nnz,
-        d_A_row_offsets,
-        d_A_col_indices,
-        d_A_values,
-        CUSPARSE_INDEX_32I,      // row offsets index type
-        CUSPARSE_INDEX_32I,      // column indices index type
-        CUSPARSE_INDEX_BASE_ZERO, // base index
-        CUDA_R_32F               // data type
+        &matA, m, k, nnz,
+        d_row_offsets, d_col_indices, d_values,
+        CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
+        CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F
     ));
 
-    // Create dense matrix descriptor for B
+    // B is row-major: (k x n), leading dimension = n
     cusparseDnMatDescr_t matB;
     CHECK_CUSPARSE(cusparseCreateDnMat(
-        &matB,
-        k, n, ldb,
-        d_B,
-        CUDA_R_32F,
-        CUSPARSE_ORDER_COL  // column-major order
+        &matB, k, n, n, d_B, CUDA_R_32F, CUSPARSE_ORDER_ROW
     ));
 
-    // Create dense matrix descriptor for C
+    // C is row-major: (m x n), leading dimension = n
     cusparseDnMatDescr_t matC;
     CHECK_CUSPARSE(cusparseCreateDnMat(
-        &matC,
-        m, n, ldc,
-        d_C,
-        CUDA_R_32F,
-        CUSPARSE_ORDER_COL  // column-major order
+        &matC, m, n, n, d_C, CUDA_R_32F, CUSPARSE_ORDER_ROW
     ));
 
-    // Determine buffer size for SpMM
+    // Buffer
     size_t bufferSize = 0;
     CHECK_CUSPARSE(cusparseSpMM_bufferSize(
         handle,
-        CUSPARSE_OPERATION_NON_TRANSPOSE, // opA
-        CUSPARSE_OPERATION_NON_TRANSPOSE, // opB
-        &alpha,
-        matA,
-        matB,
-        &beta,
-        matC,
-        CUDA_R_32F,                        // compute type
-        CUSPARSE_SPMM_ALG_DEFAULT,         // algorithm
-        &bufferSize
+        CUSPARSE_OPERATION_NON_TRANSPOSE,
+        CUSPARSE_OPERATION_NON_TRANSPOSE,
+        &alpha, matA, matB, &beta, matC,
+        CUDA_R_32F, CUSPARSE_SPMM_ALG_DEFAULT, &bufferSize
     ));
 
-    // Allocate external buffer
     void* d_buffer = nullptr;
     CHECK_CUDA(cudaMalloc(&d_buffer, bufferSize));
 
-    printf("cuSPARSE SpMM buffer size: %zu bytes\n", bufferSize);
-
-    // Execute SpMM: C = alpha * A * B + beta * C
+    // Warmup
     CHECK_CUSPARSE(cusparseSpMM(
         handle,
         CUSPARSE_OPERATION_NON_TRANSPOSE,
         CUSPARSE_OPERATION_NON_TRANSPOSE,
-        &alpha,
-        matA,
-        matB,
-        &beta,
-        matC,
-        CUDA_R_32F,
-        CUSPARSE_SPMM_ALG_DEFAULT,
-        d_buffer
+        &alpha, matA, matB, &beta, matC,
+        CUDA_R_32F, CUSPARSE_SPMM_ALG_DEFAULT, d_buffer
     ));
-
-    // Synchronize to ensure computation is complete
     CHECK_CUDA(cudaDeviceSynchronize());
 
-    // Copy result back to host
-    CHECK_CUDA(cudaMemcpy(h_C.data(), d_C,
-                          m * n * sizeof(float), cudaMemcpyDeviceToHost));
+    // Timed run
+    cudaEvent_t start, stop;
+    CHECK_CUDA(cudaEventCreate(&start));
+    CHECK_CUDA(cudaEventCreate(&stop));
 
-    // Print result
-    printf("\nResult matrix C (%d x %d):\n", m, n);
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < n; j++) {
-            printf("%8.2f ", h_C[j * ldc + i]);  // column-major access
-        }
-        printf("\n");
-    }
+    CHECK_CUDA(cudaEventRecord(start));
+    CHECK_CUSPARSE(cusparseSpMM(
+        handle,
+        CUSPARSE_OPERATION_NON_TRANSPOSE,
+        CUSPARSE_OPERATION_NON_TRANSPOSE,
+        &alpha, matA, matB, &beta, matC,
+        CUDA_R_32F, CUSPARSE_SPMM_ALG_DEFAULT, d_buffer
+    ));
+    CHECK_CUDA(cudaEventRecord(stop));
+    CHECK_CUDA(cudaEventSynchronize(stop));
+
+    float elapsed_ms = 0.0f;
+    CHECK_CUDA(cudaEventElapsedTime(&elapsed_ms, start, stop));
 
     // Cleanup
+    CHECK_CUDA(cudaEventDestroy(start));
+    CHECK_CUDA(cudaEventDestroy(stop));
     CHECK_CUSPARSE(cusparseDestroySpMat(matA));
     CHECK_CUSPARSE(cusparseDestroyDnMat(matB));
     CHECK_CUSPARSE(cusparseDestroyDnMat(matC));
     CHECK_CUSPARSE(cusparseDestroy(handle));
 
-    CHECK_CUDA(cudaFree(d_A_row_offsets));
-    CHECK_CUDA(cudaFree(d_A_col_indices));
-    CHECK_CUDA(cudaFree(d_A_values));
+    CHECK_CUDA(cudaFree(d_row_offsets));
+    CHECK_CUDA(cudaFree(d_col_indices));
+    CHECK_CUDA(cudaFree(d_values));
     CHECK_CUDA(cudaFree(d_B));
     CHECK_CUDA(cudaFree(d_C));
     CHECK_CUDA(cudaFree(d_buffer));
 
-    printf("\nSpMM completed successfully!\n");
+    return elapsed_ms;
+}
+
+template <size_t N>
+void run_registry(const char* registry_name,
+                  cuda_profiling_suite::ProfileCaseFunctionPtr (&registry)[N]) {
+    printf("\n========== %s (%zu cases) ==========\n", registry_name, N);
+    for (size_t i = 0; i < N; i++) {
+        auto [bsr, dense, test_name] = registry[i]();
+        printf("[%zu] %s: M=%zu K=%zu N=%zu R=%zu C=%zu nnz_blocks=%zu ... ",
+               i, test_name.c_str(), bsr.H, bsr.W, dense.W, bsr.R, bsr.C, bsr.nblocks);
+        fflush(stdout);
+
+        float elapsed_ms = run_spmm(bsr, dense);
+        printf("%.3f ms\n", elapsed_ms);
+    }
+}
+
+int main(int argc, char* argv[]) {
+    int registry_id = -1;  // default: run sanity check only
+    if (argc > 1) {
+        registry_id = atoi(argv[1]);
+    }
+
+    if (registry_id < 0) {
+        // Sanity check
+        auto [bsr, dense, name] = cuda_profiling_suite::profile_case_sanity_check();
+        printf("Sanity check: %s\n", name.c_str());
+        float elapsed_ms = run_spmm(bsr, dense);
+        printf("  Time: %.3f ms\n", elapsed_ms);
+        printf("\nUsage: %s <registry_id>\n", argv[0]);
+        printf("  0 = Small sparse cases\n");
+        printf("  1 = Dense ablation\n");
+        printf("  2 = Large sparse cases\n");
+        printf("  4 = Sweep N\n");
+        printf("  5 = Sweep density\n");
+        printf("  6 = Sweep K\n");
+        printf("  7 = Sweep block size\n");
+        printf("  8 = Sweep sparsity pattern (d=25%%)\n");
+        printf("  9 = Sweep sparsity pattern (d=10%%)\n");
+        printf(" 10 = Sweep sparsity pattern (d=5%%)\n");
+        printf(" 11 = Sweep sparsity pattern (d=50%%)\n");
+        printf(" 12 = Large sparse, large blocks\n");
+        return 0;
+    }
+
+    switch (registry_id) {
+        case 0:
+            run_registry("ProfileCaseRegistry",
+                         cuda_profiling_suite::ProfileCaseRegistry);
+            break;
+        case 1:
+            run_registry("ProfileDenseAblationRegistry",
+                         cuda_profiling_suite::ProfileDenseAblationRegistry);
+            break;
+        case 2:
+            run_registry("ProfileLargeSparseRegistry",
+                         cuda_profiling_suite::ProfileLargeSparseRegistry);
+            break;
+        case 4:
+            run_registry("ProfileSweepNRegistry",
+                         cuda_profiling_suite::ProfileSweepNRegistry);
+            break;
+        case 5:
+            run_registry("ProfileSweepDensityRegistry",
+                         cuda_profiling_suite::ProfileSweepDensityRegistry);
+            break;
+        case 6:
+            run_registry("ProfileSweepKRegistry",
+                         cuda_profiling_suite::ProfileSweepKRegistry);
+            break;
+        case 7:
+            run_registry("ProfileSweepBlockSizeRegistry",
+                         cuda_profiling_suite::ProfileSweepBlockSizeRegistry);
+            break;
+        case 8:
+            run_registry("ProfileSweepSparsityPatternRegistry",
+                         cuda_profiling_suite::ProfileSweepSparsityPatternRegistry);
+            break;
+        case 9:
+            run_registry("ProfileSweepSparsityPatternRegistryD10",
+                         cuda_profiling_suite::ProfileSweepSparsityPatternRegistryD10);
+            break;
+        case 10:
+            run_registry("ProfileSweepSparsityPatternRegistryD5",
+                         cuda_profiling_suite::ProfileSweepSparsityPatternRegistryD5);
+            break;
+        case 11:
+            run_registry("ProfileSweepSparsityPatternRegistryD50",
+                         cuda_profiling_suite::ProfileSweepSparsityPatternRegistryD50);
+            break;
+        case 12:
+            run_registry("ProfileLargeSparseLargeBlocksRegistry",
+                         cuda_profiling_suite::ProfileLargeSparseLargeBlocksRegistry);
+            break;
+        default:
+            fprintf(stderr, "Unknown registry ID: %d\n", registry_id);
+            return 1;
+    }
+
+    printf("\nDone.\n");
     return 0;
 }
