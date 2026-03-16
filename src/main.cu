@@ -9,39 +9,39 @@
 #include "cuda_utils.h"
 #include "cuda_profiling_suite.hpp"
 
-// Run cuSPARSE CSR SpMM for a single profile case.
+// Run cuSPARSE BSR SpMM for a single profile case.
+// Uses cusparseCreateBsr directly — no CSR conversion.
 // Returns elapsed time in milliseconds.
 float run_spmm(const cuda_bsr_matrix<float>& bsr, const cuda_dense_matrix<float>& B) {
-    // Convert BSR to CSR
-    auto csr = bsr.to_csr();
-
-    const int m = bsr.H;   // rows of A and C
-    const int k = bsr.W;   // cols of A, rows of B
-    const int n = B.W;     // cols of B and C
-    const int nnz = csr.nnz;
+    const int64_t brows = bsr.H / bsr.R;  // number of block rows
+    const int64_t bcols = bsr.W / bsr.C;  // number of block cols
+    const int64_t bnnz  = bsr.nblocks;    // number of non-zero blocks
+    const int64_t m = bsr.H;
+    const int64_t k = bsr.W;
+    const int64_t n = B.W;
 
     const float alpha = 1.0f;
     const float beta = 0.0f;
 
-    // Device memory
-    int* d_row_offsets = nullptr;
-    int* d_col_indices = nullptr;
-    float* d_values = nullptr;
+    // Device memory for BSR arrays
+    int* d_bsr_row_offsets = nullptr;
+    int* d_bsr_col_ind = nullptr;
+    float* d_bsr_values = nullptr;
     float* d_B = nullptr;
     float* d_C = nullptr;
 
-    CHECK_CUDA(cudaMalloc(&d_row_offsets, (m + 1) * sizeof(int)));
-    CHECK_CUDA(cudaMalloc(&d_col_indices, nnz * sizeof(int)));
-    CHECK_CUDA(cudaMalloc(&d_values, nnz * sizeof(float)));
+    CHECK_CUDA(cudaMalloc(&d_bsr_row_offsets, (brows + 1) * sizeof(int)));
+    CHECK_CUDA(cudaMalloc(&d_bsr_col_ind, bnnz * sizeof(int)));
+    CHECK_CUDA(cudaMalloc(&d_bsr_values, bnnz * bsr.R * bsr.C * sizeof(float)));
     CHECK_CUDA(cudaMalloc(&d_B, k * n * sizeof(float)));
     CHECK_CUDA(cudaMalloc(&d_C, m * n * sizeof(float)));
 
-    CHECK_CUDA(cudaMemcpy(d_row_offsets, csr.row_offsets.data(),
-                          (m + 1) * sizeof(int), cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(d_col_indices, csr.col_indices.data(),
-                          nnz * sizeof(int), cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(d_values, csr.values.data(),
-                          nnz * sizeof(float), cudaMemcpyHostToDevice));
+    CHECK_CUDA(cudaMemcpy(d_bsr_row_offsets, bsr.indptr.data(),
+                          (brows + 1) * sizeof(int), cudaMemcpyHostToDevice));
+    CHECK_CUDA(cudaMemcpy(d_bsr_col_ind, bsr.indices.data(),
+                          bnnz * sizeof(int), cudaMemcpyHostToDevice));
+    CHECK_CUDA(cudaMemcpy(d_bsr_values, bsr.data.data(),
+                          bnnz * bsr.R * bsr.C * sizeof(float), cudaMemcpyHostToDevice));
     CHECK_CUDA(cudaMemcpy(d_B, B.data.data(),
                           k * n * sizeof(float), cudaMemcpyHostToDevice));
     CHECK_CUDA(cudaMemset(d_C, 0, m * n * sizeof(float)));
@@ -50,12 +50,20 @@ float run_spmm(const cuda_bsr_matrix<float>& bsr, const cuda_dense_matrix<float>
     cusparseHandle_t handle = nullptr;
     CHECK_CUSPARSE(cusparseCreate(&handle));
 
+    // Create BSR sparse matrix descriptor directly
     cusparseSpMatDescr_t matA;
-    CHECK_CUSPARSE(cusparseCreateCsr(
-        &matA, m, k, nnz,
-        d_row_offsets, d_col_indices, d_values,
-        CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
-        CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F
+    CHECK_CUSPARSE(cusparseCreateBsr(
+        &matA,
+        brows, bcols, bnnz,
+        bsr.R, bsr.C,               // rowBlockSize, colBlockSize
+        d_bsr_row_offsets,
+        d_bsr_col_ind,
+        d_bsr_values,
+        CUSPARSE_INDEX_32I,          // row offsets type
+        CUSPARSE_INDEX_32I,          // col indices type
+        CUSPARSE_INDEX_BASE_ZERO,
+        CUDA_R_32F,
+        CUSPARSE_ORDER_ROW           // blocks stored in row-major order
     ));
 
     // B is row-major: (k x n), leading dimension = n
@@ -120,9 +128,9 @@ float run_spmm(const cuda_bsr_matrix<float>& bsr, const cuda_dense_matrix<float>
     CHECK_CUSPARSE(cusparseDestroyDnMat(matC));
     CHECK_CUSPARSE(cusparseDestroy(handle));
 
-    CHECK_CUDA(cudaFree(d_row_offsets));
-    CHECK_CUDA(cudaFree(d_col_indices));
-    CHECK_CUDA(cudaFree(d_values));
+    CHECK_CUDA(cudaFree(d_bsr_row_offsets));
+    CHECK_CUDA(cudaFree(d_bsr_col_ind));
+    CHECK_CUDA(cudaFree(d_bsr_values));
     CHECK_CUDA(cudaFree(d_B));
     CHECK_CUDA(cudaFree(d_C));
     CHECK_CUDA(cudaFree(d_buffer));
