@@ -31,5 +31,23 @@ set_target_properties(spmm_demo PROPERTIES
     CUDA_ARCHITECTURES "70;75;80;86;89;90"
 )
 
+# Blocked-ELL FP16 Tensor Core variant
+add_executable(spmm_bell
+    src/main_bell.cu
+)
+
+target_link_libraries(spmm_bell
+    CUDA::cusparse
+    CUDA::cudart
+)
+
+target_include_directories(spmm_bell PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+set_target_properties(spmm_bell PROPERTIES
+    CUDA_ARCHITECTURES "70;75;80;86;89;90"
+)
+
 # Optional: Enable verbose output during build
 set(CMAKE_VERBOSE_MAKEFILE OFF)
