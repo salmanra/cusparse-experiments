@@ -9,10 +9,12 @@
 #include "cuda_utils.h"
 #include "cuda_profiling_suite.hpp"
 
+static const int NUM_ITERS = 10;
+
 // Run cuSPARSE BSR SpMM for a single profile case.
 // Uses cusparseCreateBsr directly — no CSR conversion.
-// Returns elapsed time in milliseconds.
-float run_spmm(const cuda_bsr_matrix<float>& bsr, const cuda_dense_matrix<float>& B) {
+// Returns per-iteration elapsed times in milliseconds.
+std::vector<float> run_spmm(const cuda_bsr_matrix<float>& bsr, const cuda_dense_matrix<float>& B) {
     const int64_t brows = bsr.H / bsr.R;  // number of block rows
     const int64_t bcols = bsr.W / bsr.C;  // number of block cols
     const int64_t bnnz  = bsr.nblocks;    // number of non-zero blocks
@@ -101,24 +103,28 @@ float run_spmm(const cuda_bsr_matrix<float>& bsr, const cuda_dense_matrix<float>
     ));
     CHECK_CUDA(cudaDeviceSynchronize());
 
-    // Timed run
+    // Timed runs
+    std::vector<float> iter_times(NUM_ITERS);
     cudaEvent_t start, stop;
     CHECK_CUDA(cudaEventCreate(&start));
     CHECK_CUDA(cudaEventCreate(&stop));
 
-    CHECK_CUDA(cudaEventRecord(start));
-    CHECK_CUSPARSE(cusparseSpMM(
-        handle,
-        CUSPARSE_OPERATION_NON_TRANSPOSE,
-        CUSPARSE_OPERATION_NON_TRANSPOSE,
-        &alpha, matA, matB, &beta, matC,
-        CUDA_R_32F, CUSPARSE_SPMM_ALG_DEFAULT, d_buffer
-    ));
-    CHECK_CUDA(cudaEventRecord(stop));
-    CHECK_CUDA(cudaEventSynchronize(stop));
+    for (int iter = 0; iter < NUM_ITERS; iter++) {
+        CHECK_CUDA(cudaEventRecord(start));
+        CHECK_CUSPARSE(cusparseSpMM(
+            handle,
+            CUSPARSE_OPERATION_NON_TRANSPOSE,
+            CUSPARSE_OPERATION_NON_TRANSPOSE,
+            &alpha, matA, matB, &beta, matC,
+            CUDA_R_32F, CUSPARSE_SPMM_ALG_DEFAULT, d_buffer
+        ));
+        CHECK_CUDA(cudaEventRecord(stop));
+        CHECK_CUDA(cudaEventSynchronize(stop));
 
-    float elapsed_ms = 0.0f;
-    CHECK_CUDA(cudaEventElapsedTime(&elapsed_ms, start, stop));
+        float elapsed_ms = 0.0f;
+        CHECK_CUDA(cudaEventElapsedTime(&elapsed_ms, start, stop));
+        iter_times[iter] = elapsed_ms;
+    }
 
     // Cleanup
     CHECK_CUDA(cudaEventDestroy(start));
@@ -135,7 +141,7 @@ float run_spmm(const cuda_bsr_matrix<float>& bsr, const cuda_dense_matrix<float>
     CHECK_CUDA(cudaFree(d_C));
     CHECK_CUDA(cudaFree(d_buffer));
 
-    return elapsed_ms;
+    return iter_times;
 }
 
 template <size_t N>
@@ -144,20 +150,32 @@ void run_registry(const char* registry_name,
     printf("\n========== %s (%zu cases) ==========\n", registry_name, N);
     for (size_t i = 0; i < N; i++) {
         auto [bsr, dense, test_name] = registry[i]();
-        printf("[%zu] %s: M=%zu K=%zu N=%zu R=%zu C=%zu nnz_blocks=%zu ... ",
-               i, test_name.c_str(), bsr.H, bsr.W, dense.W, bsr.R, bsr.C, bsr.nblocks);
+        printf("[%zu] %s: M=%zu K=%zu N=%zu R=%zu C=%zu nnz_blocks=%zu (%d iters)\n",
+               i, test_name.c_str(), bsr.H, bsr.W, dense.W, bsr.R, bsr.C, bsr.nblocks, NUM_ITERS);
         fflush(stdout);
 
-        float elapsed_ms = run_spmm(bsr, dense);
-        // TODO: print TFLOPS and GB/s
+        std::vector<float> iter_times = run_spmm(bsr, dense);
+
         float flops = 2.0f * bsr.nblocks * bsr.R * bsr.C * dense.W;
-        float tflops = flops / 1e12 / (elapsed_ms / 1e3);
-        float bytes = (bsr.nblocks * bsr.R * bsr.C + bsr.nblocks * 2) * sizeof(float) +  // values + row_offsets + col_indices
-                      (bsr.W * dense.W + bsr.H * dense.W) * sizeof(float);  // B and C
-        float gbps = bytes / (elapsed_ms / 1e3) / 1e9;  
-        printf("%.3f ms\n", elapsed_ms);
-        printf("  TFLOPS: %.3f\n", tflops);
-        printf("  GB/s: %.3f\n", gbps);
+        float bytes = (bsr.nblocks * bsr.R * bsr.C + bsr.nblocks * 2) * sizeof(float) +
+                      (bsr.W * dense.W + bsr.H * dense.W) * sizeof(float);
+
+        float sum_ms = 0.0f, min_ms = iter_times[0];
+        for (int j = 0; j < NUM_ITERS; j++) {
+            sum_ms += iter_times[j];
+            if (iter_times[j] < min_ms) min_ms = iter_times[j];
+        }
+        float avg_ms = sum_ms / NUM_ITERS;
+
+        float avg_tflops = flops / 1e12 / (avg_ms / 1e3);
+        float max_tflops = flops / 1e12 / (min_ms / 1e3);
+        float avg_gbps   = bytes / (avg_ms / 1e3) / 1e9;
+        float max_gbps   = bytes / (min_ms / 1e3) / 1e9;
+
+        printf("  Avg time: %.3f ms  |  Avg TFLOPS: %.3f  |  Avg GB/s: %.3f\n",
+               avg_ms, avg_tflops, avg_gbps);
+        printf("  Min time: %.3f ms  |  Max TFLOPS: %.3f  |  Max GB/s: %.3f\n",
+               min_ms, max_tflops, max_gbps);
     }
 }
 
@@ -171,8 +189,9 @@ int main(int argc, char* argv[]) {
         // Sanity check
         auto [bsr, dense, name] = cuda_profiling_suite::profile_case_sanity_check();
         printf("Sanity check: %s\n", name.c_str());
-        float elapsed_ms = run_spmm(bsr, dense);
-        printf("  Time: %.3f ms\n", elapsed_ms);
+        std::vector<float> times = run_spmm(bsr, dense);
+        float sum = 0.0f; for (auto t : times) sum += t;
+        printf("  Avg time: %.3f ms (%d iters)\n", sum / NUM_ITERS, NUM_ITERS);
         printf("\nUsage: %s <registry_id>\n", argv[0]);
         printf("  0 = Small sparse cases\n");
         printf("  1 = Dense ablation\n");

@@ -90,9 +90,11 @@ BlockedELLData bsr_to_blocked_ell(const cuda_bsr_matrix<float>& bsr) {
     return ell;
 }
 
+static const int NUM_ITERS = 10;
+
 // Run cuSPARSE Blocked-ELL SpMM with FP16 + FP32 compute (Tensor Cores).
-// Returns elapsed time in milliseconds.
-float run_spmm_bell(const cuda_bsr_matrix<float>& bsr, const cuda_dense_matrix<float>& B) {
+// Returns per-iteration elapsed times in milliseconds.
+std::vector<float> run_spmm_bell(const cuda_bsr_matrix<float>& bsr, const cuda_dense_matrix<float>& B) {
     auto ell = bsr_to_blocked_ell(bsr);
 
     const int64_t m = bsr.H;
@@ -191,26 +193,30 @@ float run_spmm_bell(const cuda_bsr_matrix<float>& bsr, const cuda_dense_matrix<f
     ));
     CHECK_CUDA(cudaDeviceSynchronize());
 
-    // Timed run
+    // Timed runs
+    std::vector<float> iter_times(NUM_ITERS);
     cudaEvent_t start, stop;
     CHECK_CUDA(cudaEventCreate(&start));
     CHECK_CUDA(cudaEventCreate(&stop));
 
-    CHECK_CUDA(cudaEventRecord(start));
-    CHECK_CUSPARSE(cusparseSpMM(
-        handle,
-        CUSPARSE_OPERATION_NON_TRANSPOSE,
-        CUSPARSE_OPERATION_NON_TRANSPOSE,
-        &alpha, matA, matB, &beta, matC,
-        CUDA_R_32F,
-        CUSPARSE_SPMM_BLOCKED_ELL_ALG1,
-        d_buffer
-    ));
-    CHECK_CUDA(cudaEventRecord(stop));
-    CHECK_CUDA(cudaEventSynchronize(stop));
+    for (int iter = 0; iter < NUM_ITERS; iter++) {
+        CHECK_CUDA(cudaEventRecord(start));
+        CHECK_CUSPARSE(cusparseSpMM(
+            handle,
+            CUSPARSE_OPERATION_NON_TRANSPOSE,
+            CUSPARSE_OPERATION_NON_TRANSPOSE,
+            &alpha, matA, matB, &beta, matC,
+            CUDA_R_32F,
+            CUSPARSE_SPMM_BLOCKED_ELL_ALG1,
+            d_buffer
+        ));
+        CHECK_CUDA(cudaEventRecord(stop));
+        CHECK_CUDA(cudaEventSynchronize(stop));
 
-    float elapsed_ms = 0.0f;
-    CHECK_CUDA(cudaEventElapsedTime(&elapsed_ms, start, stop));
+        float elapsed_ms = 0.0f;
+        CHECK_CUDA(cudaEventElapsedTime(&elapsed_ms, start, stop));
+        iter_times[iter] = elapsed_ms;
+    }
 
     // Cleanup
     CHECK_CUDA(cudaEventDestroy(start));
@@ -226,7 +232,7 @@ float run_spmm_bell(const cuda_bsr_matrix<float>& bsr, const cuda_dense_matrix<f
     CHECK_CUDA(cudaFree(d_C));
     CHECK_CUDA(cudaFree(d_buffer));
 
-    return elapsed_ms;
+    return iter_times;
 }
 
 template <size_t N>
@@ -242,21 +248,33 @@ void run_registry(const char* registry_name,
             continue;
         }
 
-        printf("[%zu] %s: M=%zu K=%zu N=%zu block=%zu nnz_blocks=%zu ... ",
-               i, test_name.c_str(), bsr.H, bsr.W, dense.W, bsr.R, bsr.nblocks);
+        printf("[%zu] %s: M=%zu K=%zu N=%zu block=%zu nnz_blocks=%zu (%d iters)\n",
+               i, test_name.c_str(), bsr.H, bsr.W, dense.W, bsr.R, bsr.nblocks, NUM_ITERS);
         fflush(stdout);
 
-        float elapsed_ms = run_spmm_bell(bsr, dense);
+        std::vector<float> iter_times = run_spmm_bell(bsr, dense);
+
         float flops = 2.0f * bsr.nblocks * bsr.R * bsr.C * dense.W;
-        float tflops = flops / 1e12 / (elapsed_ms / 1e3);
-        // Blocked ELL uses FP16, so halved data sizes for values, B, C
-        float bytes = (bsr.nblocks * bsr.R * bsr.C) * sizeof(__half) +    // ELL values (actual blocks)
-                      (bsr.nblocks) * sizeof(int) +                        // col indices
-                      (bsr.W * dense.W + bsr.H * dense.W) * sizeof(__half); // B and C
-        float gbps = bytes / (elapsed_ms / 1e3) / 1e9;
-        printf("%.3f ms\n", elapsed_ms);
-        printf("  TFLOPS: %.3f\n", tflops);
-        printf("  GB/s:   %.3f\n", gbps);
+        float bytes = (bsr.nblocks * bsr.R * bsr.C) * sizeof(__half) +
+                      (bsr.nblocks) * sizeof(int) +
+                      (bsr.W * dense.W + bsr.H * dense.W) * sizeof(__half);
+
+        float sum_ms = 0.0f, min_ms = iter_times[0];
+        for (int j = 0; j < NUM_ITERS; j++) {
+            sum_ms += iter_times[j];
+            if (iter_times[j] < min_ms) min_ms = iter_times[j];
+        }
+        float avg_ms = sum_ms / NUM_ITERS;
+
+        float avg_tflops = flops / 1e12 / (avg_ms / 1e3);
+        float max_tflops = flops / 1e12 / (min_ms / 1e3);
+        float avg_gbps   = bytes / (avg_ms / 1e3) / 1e9;
+        float max_gbps   = bytes / (min_ms / 1e3) / 1e9;
+
+        printf("  Avg time: %.3f ms  |  Avg TFLOPS: %.3f  |  Avg GB/s: %.3f\n",
+               avg_ms, avg_tflops, avg_gbps);
+        printf("  Min time: %.3f ms  |  Max TFLOPS: %.3f  |  Max GB/s: %.3f\n",
+               min_ms, max_tflops, max_gbps);
     }
 }
 
@@ -280,8 +298,9 @@ int main(int argc, char* argv[]) {
     if (registry_id < 0) {
         auto [bsr, dense, name] = cuda_profiling_suite::profile_case_sanity_check();
         printf("\nSanity check: %s\n", name.c_str());
-        float elapsed_ms = run_spmm_bell(bsr, dense);
-        printf("  Time: %.3f ms\n", elapsed_ms);
+        std::vector<float> times = run_spmm_bell(bsr, dense);
+        float sum = 0.0f; for (auto t : times) sum += t;
+        printf("  Avg time: %.3f ms (%d iters)\n", sum / NUM_ITERS, NUM_ITERS);
         printf("\nUsage: %s <registry_id>\n", argv[0]);
         printf("  0 = Small sparse cases\n");
         printf("  1 = Dense ablation\n");
