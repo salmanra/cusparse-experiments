@@ -268,6 +268,10 @@ CMakeFiles/spmm_demo.dir/src/main.cu.o: ../src/main.cu \
   /usr/include/c++/10/ctime \
   /usr/include/c++/10/bits/parse_numbers.h \
   ../include/cuda_utils.h \
+  /usr/local/cuda-12.5/include/cublas_v2.h \
+  /usr/local/cuda-12.5/include/cublas_api.h \
+  /usr/local/cuda-12.5/include/cuda_bf16.h \
+  /usr/local/cuda-12.5/include/cuda_bf16.hpp \
   ../include/cuda_profiling_suite.hpp \
   /usr/include/c++/10/tuple \
   /usr/include/c++/10/array \
@@ -403,6 +407,12 @@ CMakeFiles/spmm_demo.dir/src/main.cu.o: ../src/main.cu \
 /usr/include/c++/10/tuple:
 
 ../include/cuda_profiling_suite.hpp:
+
+/usr/local/cuda-12.5/include/cuda_bf16.hpp:
+
+/usr/local/cuda-12.5/include/cuda_bf16.h:
+
+/usr/local/cuda-12.5/include/cublas_v2.h:
 
 /usr/include/c++/10/ctime:
 
@@ -605,6 +615,8 @@ CMakeFiles/spmm_demo.dir/src/main.cu.o: ../src/main.cu \
 /usr/include/string.h:
 
 /usr/include/x86_64-linux-gnu/bits/endian.h:
+
+/usr/local/cuda-12.5/include/cublas_api.h:
 
 /usr/local/cuda-12.5/include/vector_functions.h:
 

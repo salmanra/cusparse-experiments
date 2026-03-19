@@ -142,6 +142,19 @@ spmm_bell/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bell.dir/build.make CMakeFiles/spmm_bell.dir/build
 .PHONY : spmm_bell/fast
 
+#=============================================================================
+# Target rules for targets named gemm_demo
+
+# Build rule for target.
+gemm_demo: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 gemm_demo
+.PHONY : gemm_demo
+
+# fast build rule for target.
+gemm_demo/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/gemm_demo.dir/build.make CMakeFiles/gemm_demo.dir/build
+.PHONY : gemm_demo/fast
+
 src/main.o: src/main.cu.o
 .PHONY : src/main.o
 
@@ -190,6 +203,30 @@ src/main_bell.cu.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bell.dir/build.make CMakeFiles/spmm_bell.dir/src/main_bell.cu.s
 .PHONY : src/main_bell.cu.s
 
+src/main_gemm.o: src/main_gemm.cu.o
+.PHONY : src/main_gemm.o
+
+# target to build an object file
+src/main_gemm.cu.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/gemm_demo.dir/build.make CMakeFiles/gemm_demo.dir/src/main_gemm.cu.o
+.PHONY : src/main_gemm.cu.o
+
+src/main_gemm.i: src/main_gemm.cu.i
+.PHONY : src/main_gemm.i
+
+# target to preprocess a source file
+src/main_gemm.cu.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/gemm_demo.dir/build.make CMakeFiles/gemm_demo.dir/src/main_gemm.cu.i
+.PHONY : src/main_gemm.cu.i
+
+src/main_gemm.s: src/main_gemm.cu.s
+.PHONY : src/main_gemm.s
+
+# target to generate assembly for a file
+src/main_gemm.cu.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/gemm_demo.dir/build.make CMakeFiles/gemm_demo.dir/src/main_gemm.cu.s
+.PHONY : src/main_gemm.cu.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -198,6 +235,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... gemm_demo"
 	@echo "... spmm_bell"
 	@echo "... spmm_demo"
 	@echo "... src/main.o"
@@ -206,6 +244,9 @@ help:
 	@echo "... src/main_bell.o"
 	@echo "... src/main_bell.i"
 	@echo "... src/main_bell.s"
+	@echo "... src/main_gemm.o"
+	@echo "... src/main_gemm.i"
+	@echo "... src/main_gemm.s"
 .PHONY : help
 
 

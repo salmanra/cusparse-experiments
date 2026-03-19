@@ -52,4 +52,5 @@ set(CMAKE_MAKEFILE_PRODUCTS
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/spmm_demo.dir/DependInfo.cmake"
   "CMakeFiles/spmm_bell.dir/DependInfo.cmake"
+  "CMakeFiles/gemm_demo.dir/DependInfo.cmake"
   )
