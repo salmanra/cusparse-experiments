@@ -1,4 +1,5 @@
 #include <cuda_runtime.h>
+#include <cuda_fp16.h>
 #include <cublas_v2.h>
 #include <cstdio>
 #include <cstdlib>
@@ -15,40 +16,47 @@ struct GemmCase {
     std::string name;
 };
 
-// Run cuBLAS SGEMM: C = alpha * A * B + beta * C
-// A is (M x K), B is (K x N), C is (M x N), all FP32
+// Run cuBLAS HGEMM: C = alpha * A * B + beta * C
+// A is (M x K), B is (K x N), C is (M x N), all FP16
+// Uses Tensor Cores by default on sm_70+ via cublasGemmEx with CUBLAS_COMPUTE_16F.
 // Returns per-iteration elapsed times in milliseconds.
 std::vector<float> run_gemm(cublasHandle_t handle, int M, int N, int K) {
-    const float alpha = 1.0f;
-    const float beta = 0.0f;
+    const __half alpha = __float2half(1.0f);
+    const __half beta  = __float2half(0.0f);
 
     size_t size_A = (size_t)M * K;
     size_t size_B = (size_t)K * N;
     size_t size_C = (size_t)M * N;
 
-    // Host allocation and random init
-    std::vector<float> h_A(size_A), h_B(size_B);
-    for (size_t i = 0; i < size_A; i++) h_A[i] = (float)rand() / RAND_MAX;
-    for (size_t i = 0; i < size_B; i++) h_B[i] = (float)rand() / RAND_MAX;
+    // Host allocation and random init (generate as float, convert to half)
+    std::vector<__half> h_A(size_A), h_B(size_B);
+    for (size_t i = 0; i < size_A; i++) h_A[i] = __float2half((float)rand() / RAND_MAX);
+    for (size_t i = 0; i < size_B; i++) h_B[i] = __float2half((float)rand() / RAND_MAX);
 
     // Device memory
-    float *d_A = nullptr, *d_B = nullptr, *d_C = nullptr;
-    CHECK_CUDA(cudaMalloc(&d_A, size_A * sizeof(float)));
-    CHECK_CUDA(cudaMalloc(&d_B, size_B * sizeof(float)));
-    CHECK_CUDA(cudaMalloc(&d_C, size_C * sizeof(float)));
+    __half *d_A = nullptr, *d_B = nullptr, *d_C = nullptr;
+    CHECK_CUDA(cudaMalloc(&d_A, size_A * sizeof(__half)));
+    CHECK_CUDA(cudaMalloc(&d_B, size_B * sizeof(__half)));
+    CHECK_CUDA(cudaMalloc(&d_C, size_C * sizeof(__half)));
 
-    CHECK_CUDA(cudaMemcpy(d_A, h_A.data(), size_A * sizeof(float), cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(d_B, h_B.data(), size_B * sizeof(float), cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemset(d_C, 0, size_C * sizeof(float)));
+    CHECK_CUDA(cudaMemcpy(d_A, h_A.data(), size_A * sizeof(__half), cudaMemcpyHostToDevice));
+    CHECK_CUDA(cudaMemcpy(d_B, h_B.data(), size_B * sizeof(__half), cudaMemcpyHostToDevice));
+    CHECK_CUDA(cudaMemset(d_C, 0, size_C * sizeof(__half)));
 
     // cuBLAS uses column-major. For row-major A(M,K) * B(K,N) = C(M,N),
     // we compute: C^T = B^T * A^T using column-major layout.
-    // B^T is (N x K) stored as column-major B_row, A^T is (K x M) stored as column-major A_row.
-    // cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, M, K, &alpha, d_B, N, d_A, K, &beta, d_C, N)
+    // cublasGemmEx with CUDA_R_16F inputs and CUBLAS_COMPUTE_16F will use Tensor Cores.
 
     // Warmup
-    CHECK_CUBLAS(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
-                             N, M, K, &alpha, d_B, N, d_A, K, &beta, d_C, N));
+    CHECK_CUBLAS(cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+                              N, M, K,
+                              &alpha,
+                              d_B, CUDA_R_16F, N,
+                              d_A, CUDA_R_16F, K,
+                              &beta,
+                              d_C, CUDA_R_16F, N,
+                              CUBLAS_COMPUTE_16F,
+                              CUBLAS_GEMM_DEFAULT_TENSOR_OP));
     CHECK_CUDA(cudaDeviceSynchronize());
 
     // Timed runs
@@ -59,8 +67,15 @@ std::vector<float> run_gemm(cublasHandle_t handle, int M, int N, int K) {
 
     for (int iter = 0; iter < NUM_ITERS; iter++) {
         CHECK_CUDA(cudaEventRecord(start));
-        CHECK_CUBLAS(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
-                                 N, M, K, &alpha, d_B, N, d_A, K, &beta, d_C, N));
+        CHECK_CUBLAS(cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+                                  N, M, K,
+                                  &alpha,
+                                  d_B, CUDA_R_16F, N,
+                                  d_A, CUDA_R_16F, K,
+                                  &beta,
+                                  d_C, CUDA_R_16F, N,
+                                  CUBLAS_COMPUTE_16F,
+                                  CUBLAS_GEMM_DEFAULT_TENSOR_OP));
         CHECK_CUDA(cudaEventRecord(stop));
         CHECK_CUDA(cudaEventSynchronize(stop));
 
@@ -83,6 +98,9 @@ void run_cases(const char* registry_name, const std::vector<GemmCase>& cases) {
     cublasHandle_t handle;
     CHECK_CUBLAS(cublasCreate(&handle));
 
+    // Enable Tensor Core math
+    CHECK_CUBLAS(cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH));
+
     printf("\n========== %s (%zu cases) ==========\n", registry_name, cases.size());
     for (size_t i = 0; i < cases.size(); i++) {
         const auto& c = cases[i];
@@ -94,8 +112,8 @@ void run_cases(const char* registry_name, const std::vector<GemmCase>& cases) {
 
         // 2*M*N*K FLOPs for dense GEMM
         double flops = 2.0 * c.M * c.N * (double)c.K;
-        // Bytes: read A (M*K) + read B (K*N) + write C (M*N)
-        double bytes = ((double)c.M * c.K + (double)c.K * c.N + (double)c.M * c.N) * sizeof(float);
+        // Bytes: read A (M*K) + read B (K*N) + write C (M*N), all FP16
+        double bytes = ((double)c.M * c.K + (double)c.K * c.N + (double)c.M * c.N) * sizeof(__half);
 
         float sum_ms = 0.0f, min_ms = iter_times[0];
         for (int j = 0; j < NUM_ITERS; j++) {
@@ -177,9 +195,10 @@ int main(int argc, char* argv[]) {
 
     if (registry_id < 0) {
         // Sanity check
-        printf("Sanity check: cuBLAS SGEMM 256x256x256\n");
+        printf("Sanity check: cuBLAS FP16 GEMM 256x256x256 (Tensor Cores)\n");
         cublasHandle_t handle;
         CHECK_CUBLAS(cublasCreate(&handle));
+        CHECK_CUBLAS(cublasSetMathMode(handle, CUBLAS_TENSOR_OP_MATH));
         std::vector<float> times = run_gemm(handle, 256, 256, 256);
         CHECK_CUBLAS(cublasDestroy(handle));
         float sum = 0.0f; for (auto t : times) sum += t;
