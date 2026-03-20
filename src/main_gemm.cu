@@ -18,11 +18,11 @@ struct GemmCase {
 
 // Run cuBLAS HGEMM: C = alpha * A * B + beta * C
 // A is (M x K), B is (K x N), C is (M x N), all FP16
-// Uses Tensor Cores by default on sm_70+ via cublasGemmEx with CUBLAS_COMPUTE_16F.
+// Uses Tensor Cores by default on sm_70+ via cublasGemmEx with CUBLAS_COMPUTE_32F.
 // Returns per-iteration elapsed times in milliseconds.
 std::vector<float> run_gemm(cublasHandle_t handle, int M, int N, int K) {
-    const __half alpha = __float2half(1.0f);
-    const __half beta  = __float2half(0.0f);
+    const float alpha = 1.0f;
+    const float beta  = 0.0f;
 
     size_t size_A = (size_t)M * K;
     size_t size_B = (size_t)K * N;
@@ -45,7 +45,7 @@ std::vector<float> run_gemm(cublasHandle_t handle, int M, int N, int K) {
 
     // cuBLAS uses column-major. For row-major A(M,K) * B(K,N) = C(M,N),
     // we compute: C^T = B^T * A^T using column-major layout.
-    // cublasGemmEx with CUDA_R_16F inputs and CUBLAS_COMPUTE_16F will use Tensor Cores.
+    // cublasGemmEx with CUDA_R_16F inputs and CUBLAS_COMPUTE_32F accumulates in FP32 using Tensor Cores.
 
     // Warmup
     CHECK_CUBLAS(cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N,
@@ -55,7 +55,7 @@ std::vector<float> run_gemm(cublasHandle_t handle, int M, int N, int K) {
                               d_A, CUDA_R_16F, K,
                               &beta,
                               d_C, CUDA_R_16F, N,
-                              CUBLAS_COMPUTE_16F,
+                              CUBLAS_COMPUTE_32F,
                               CUBLAS_GEMM_DEFAULT_TENSOR_OP));
     CHECK_CUDA(cudaDeviceSynchronize());
 
@@ -74,7 +74,7 @@ std::vector<float> run_gemm(cublasHandle_t handle, int M, int N, int K) {
                                   d_A, CUDA_R_16F, K,
                                   &beta,
                                   d_C, CUDA_R_16F, N,
-                                  CUBLAS_COMPUTE_16F,
+                                  CUBLAS_COMPUTE_32F,
                                   CUBLAS_GEMM_DEFAULT_TENSOR_OP));
         CHECK_CUDA(cudaEventRecord(stop));
         CHECK_CUDA(cudaEventSynchronize(stop));
