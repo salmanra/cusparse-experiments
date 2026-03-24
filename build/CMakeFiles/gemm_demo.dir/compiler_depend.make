@@ -189,6 +189,11 @@ CMakeFiles/gemm_demo.dir/src/main_gemm.cu.o: ../src/main_gemm.cu \
   /usr/include/c++/10/utility \
   /usr/include/c++/10/bits/stl_relops.h \
   /usr/include/c++/10/initializer_list \
+  /usr/local/cuda-12.5/include/cuda_fp16.h \
+  /usr/local/cuda-12.5/include/nv/target \
+  /usr/local/cuda-12.5/include/nv/detail/__target_macros \
+  /usr/local/cuda-12.5/include/nv/detail/__preprocessor \
+  /usr/local/cuda-12.5/include/cuda_fp16.hpp \
   /usr/local/cuda-12.5/include/cublas_v2.h \
   /usr/local/cuda-12.5/include/cublas_api.h \
   /usr/lib/gcc/x86_64-linux-gnu/10/include/stdint.h \
@@ -196,11 +201,6 @@ CMakeFiles/gemm_demo.dir/src/main_gemm.cu.o: ../src/main_gemm.cu \
   /usr/include/x86_64-linux-gnu/bits/wchar.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
   /usr/local/cuda-12.5/include/cuComplex.h \
-  /usr/local/cuda-12.5/include/cuda_fp16.h \
-  /usr/local/cuda-12.5/include/nv/target \
-  /usr/local/cuda-12.5/include/nv/detail/__target_macros \
-  /usr/local/cuda-12.5/include/nv/detail/__preprocessor \
-  /usr/local/cuda-12.5/include/cuda_fp16.hpp \
   /usr/local/cuda-12.5/include/cuda_bf16.h \
   /usr/local/cuda-12.5/include/cuda_bf16.hpp \
   /usr/include/c++/10/cstdio \
@@ -318,9 +318,9 @@ CMakeFiles/gemm_demo.dir/src/main_gemm.cu.o: ../src/main_gemm.cu \
 
 /usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h:
 
-/usr/lib/gcc/x86_64-linux-gnu/10/include/stdint.h:
-
 /usr/local/cuda-12.5/include/cuda_fp16.hpp:
+
+/usr/lib/gcc/x86_64-linux-gnu/10/include/stdint.h:
 
 /usr/include/c++/10/backward/binders.h:
 
