@@ -183,6 +183,21 @@ namespace cuda_profiling_suite {
         return std::make_tuple(std::move(bsr), std::move(dense), std::string(buf, n));
     }
 
+    // PPM-based parametric random for ultra-low densities (mirrors TT profiling_suite)
+    template <uint32_t M = 8192, uint32_t N = 8192, uint32_t K = 8192,
+              uint32_t R = 64, uint32_t C = 64, uint32_t DensityPPM = 250000>
+    inline ProfileCaseReturnType profile_case_parametric_random_ppm() {
+        uint32_t bh = M / R;
+        uint32_t bw = K / C;
+        constexpr float density = DensityPPM / 1000000.0f;
+        uint32_t nblocks = std::max(1u, uint32_t(std::round(bh * bw * density)));
+        cuda_bsr_matrix<float> bsr(M, K, R, C, nblocks, CUDA_RAND);
+        cuda_dense_matrix<float> dense(K, N, CUDA_RAND);
+        char buf[128];
+        size_t n = sprintf(buf, "parametric_M%u_N%u_K%u_R%u_C%u_dppm%u", M, N, K, R, C, DensityPPM);
+        return std::make_tuple(std::move(bsr), std::move(dense), std::string(buf, n));
+    }
+
     template <uint32_t M = 8192, uint32_t N = 8192, uint32_t K = 8192,
               uint32_t R = 64, uint32_t C = 64, uint32_t DensityPercent = 25>
     inline ProfileCaseReturnType profile_case_parametric_multi_diag() {
@@ -391,6 +406,26 @@ namespace cuda_profiling_suite {
         profile_case_parametric_diag<8192, 8192, 8192, 256, 256, 50>,
         profile_case_parametric_multi_diag<8192, 8192, 8192, 256, 256, 50>,
         profile_case_parametric_random<8192, 8192, 8192, 256, 256, 50>,
+    };
+
+    // Registry 12: Sweep ultra-low density — M=N=K=8192, R=C=32, 30–10000 PPM
+    static ProfileCaseFunctionPtr ProfileSweepUltraLowDensity32Registry[] = {
+        profile_case_parametric_random_ppm<8192, 8192, 8192, 32, 32,    30>,  //  0.003%  (~2 blocks / 65536)
+        profile_case_parametric_random_ppm<8192, 8192, 8192, 32, 32,   100>,  //  0.01%   (~7 blocks)
+        profile_case_parametric_random_ppm<8192, 8192, 8192, 32, 32,   300>,  //  0.03%   (~20 blocks)
+        profile_case_parametric_random_ppm<8192, 8192, 8192, 32, 32,  1000>,  //  0.1%    (~66 blocks)
+        profile_case_parametric_random_ppm<8192, 8192, 8192, 32, 32,  3000>,  //  0.3%    (~197 blocks)
+        profile_case_parametric_random_ppm<8192, 8192, 8192, 32, 32, 10000>,  //  1.0%    (~655 blocks)
+    };
+
+    // Registry 13: Sweep ultra-low density — M=N=K=8192, R=C=64, 60–10000 PPM
+    static ProfileCaseFunctionPtr ProfileSweepUltraLowDensity64Registry[] = {
+        profile_case_parametric_random_ppm<8192, 8192, 8192, 64, 64,    60>,  //  0.006%  (~1 block / 16384)
+        profile_case_parametric_random_ppm<8192, 8192, 8192, 64, 64,   200>,  //  0.02%   (~3 blocks)
+        profile_case_parametric_random_ppm<8192, 8192, 8192, 64, 64,   600>,  //  0.06%   (~10 blocks)
+        profile_case_parametric_random_ppm<8192, 8192, 8192, 64, 64,  2000>,  //  0.2%    (~33 blocks)
+        profile_case_parametric_random_ppm<8192, 8192, 8192, 64, 64,  6000>,  //  0.6%    (~98 blocks)
+        profile_case_parametric_random_ppm<8192, 8192, 8192, 64, 64, 10000>,  //  1.0%    (~164 blocks)
     };
 
     // Large sparse with large blocks

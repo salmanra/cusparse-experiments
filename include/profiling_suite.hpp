@@ -73,7 +73,7 @@ namespace profiling_suite {
     ProfileCaseReturnType profile_case_sparse_fill_random();
 
     // Fully parametric sparse cases for sweeps
-    // Template params: M, N, K, R, C, DensityPercent (density as %, e.g. 25 = 25%)
+    // Template params: M, N, K, R, C, DensityPPM (density in parts-per-million, e.g. 250000 = 25%)
     template <uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t>
     ProfileCaseReturnType profile_case_parametric_random();
     template <uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t>
@@ -86,7 +86,7 @@ namespace profiling_suite {
     ProfileCaseReturnType profile_case_parametric_multi_diag();
 
     // Large sparse cases (32768x32768 matrices)
-    // DensityPercent: density as percentage (e.g., 25 = 0.25, 10 = 0.10)
+    // DensityPPM: density in parts-per-million (e.g., 250000 = 25%, 10 = 0.001%)
     template <uint32_t, uint32_t, uint32_t>
     ProfileCaseReturnType profile_case_sparse_diagonal_large();
     template <uint32_t, uint32_t, uint32_t>
@@ -134,18 +134,18 @@ namespace profiling_suite {
     };
 
     static ProfileCaseFunctionPtr ProfileLargeSparseRegistry[] = {
-        profile_case_sparse_diagonal_large<32, 32, 25>, // 0 - 25% density
-        profile_case_sparse_diagonal_large<64, 64, 25>, // 1
-        profile_case_sparse_diagonal_large<128, 128, 25>, // 2
-        profile_case_sparse_fill_column_large<32, 32, 25>, // 3
-        profile_case_sparse_fill_column_large<64, 64, 25>, // 4
-        profile_case_sparse_fill_column_large<128, 128, 25>, // 5
-        profile_case_sparse_fill_row_large<32, 32, 25>, // 6
-        profile_case_sparse_fill_row_large<64, 64, 25>, // 7
-        profile_case_sparse_fill_row_large<128, 128, 25>, // 8
-        profile_case_sparse_fill_random_large<32, 32, 25>, // 9
-        profile_case_sparse_fill_random_large<64, 64, 25>, // 10
-        profile_case_sparse_fill_random_large<128, 128, 25>, // 11
+        profile_case_sparse_diagonal_large<32, 32, 250000>, // 0 - 25% density
+        profile_case_sparse_diagonal_large<64, 64, 250000>, // 1
+        profile_case_sparse_diagonal_large<128, 128, 250000>, // 2
+        profile_case_sparse_fill_column_large<32, 32, 250000>, // 3
+        profile_case_sparse_fill_column_large<64, 64, 250000>, // 4
+        profile_case_sparse_fill_column_large<128, 128, 250000>, // 5
+        profile_case_sparse_fill_row_large<32, 32, 250000>, // 6
+        profile_case_sparse_fill_row_large<64, 64, 250000>, // 7
+        profile_case_sparse_fill_row_large<128, 128, 250000>, // 8
+        profile_case_sparse_fill_random_large<32, 32, 250000>, // 9
+        profile_case_sparse_fill_random_large<64, 64, 250000>, // 10
+        profile_case_sparse_fill_random_large<128, 128, 250000>, // 11
         profile_case_sparse_fill_lower_triangular_large<32, 32>, // 12
         profile_case_sparse_fill_lower_triangular_large<64, 64>, // 13
         profile_case_sparse_fill_lower_triangular_large<128, 128>, // 14
@@ -154,7 +154,7 @@ namespace profiling_suite {
     // -----------------------------------------------------------------------
     // Sweep registries for parametric cost-class profiling (registries 4-7)
     // Each registry varies one axis while keeping the others roughly constant.
-    // Naming: profile_case_parametric_random<M, N, K, R, C, DensityPercent>
+    // Naming: profile_case_parametric_random<M, N, K, R, C, DensityPPM>
     //
     // Cost metric estimates (in block-tile units):
     //   sparse_reads  ∝ nnz_blocks × Rt × Ct
@@ -165,97 +165,112 @@ namespace profiling_suite {
 
     // Registry 4: Sweep N (dense output width) — holds M=8192,K=8192,R=C=64,density=25%
     static ProfileCaseFunctionPtr ProfileSweepNRegistry[] = {
-        profile_case_parametric_random<8192, 512,  8192, 256, 256, 25>,  // N= 512
-        profile_case_parametric_random<8192, 1024, 8192, 256, 256, 25>,  // N=1024
-        profile_case_parametric_random<8192, 2048, 8192, 256, 256, 25>,  // N=2048
-        profile_case_parametric_random<8192, 4096, 8192, 256, 256, 25>,  // N=4096
-        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 25>,  // N=8192
+        profile_case_parametric_random<8192, 512,  8192, 256, 256, 250000>,  // N= 512
+        profile_case_parametric_random<8192, 1024, 8192, 256, 256, 250000>,  // N=1024
+        profile_case_parametric_random<8192, 2048, 8192, 256, 256, 250000>,  // N=2048
+        profile_case_parametric_random<8192, 4096, 8192, 256, 256, 250000>,  // N=4096
+        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 250000>,  // N=8192
     };
 
     // Registry 5: Sweep density — holds M=N=K=8192,R=C=64, vary density
     static ProfileCaseFunctionPtr ProfileSweepDensityRegistry[] = {
-        profile_case_parametric_random<8192, 8192, 8192, 256, 256,  5>,  //  5%
-        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 10>,  // 10%
-        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 25>,  // 25%
-        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 50>,  // 50%
-        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 75>,  // 75%
+        profile_case_parametric_random<8192, 8192, 8192, 256, 256,  50000>,  //  5%
+        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 100000>,  // 10%
+        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 250000>,  // 25%
+        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 500000>,  // 50%
+        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 750000>,  // 75%
     };
 
     // Registry 6: Sweep K (reduction dimension) — holds M=N=8192,R=C=64,density=25%
     static ProfileCaseFunctionPtr ProfileSweepKRegistry[] = {
-        profile_case_parametric_random<8192, 8192,  512, 256, 256, 25>,  // K= 512
-        profile_case_parametric_random<8192, 8192, 1024, 256, 256, 25>,  // K=1024
-        profile_case_parametric_random<8192, 8192, 2048, 256, 256, 25>,  // K=2048
-        profile_case_parametric_random<8192, 8192, 4096, 256, 256, 25>,  // K=4096
-        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 25>,  // K=8192
+        profile_case_parametric_random<8192, 8192,  512, 256, 256, 250000>,  // K= 512
+        profile_case_parametric_random<8192, 8192, 1024, 256, 256, 250000>,  // K=1024
+        profile_case_parametric_random<8192, 8192, 2048, 256, 256, 250000>,  // K=2048
+        profile_case_parametric_random<8192, 8192, 4096, 256, 256, 250000>,  // K=4096
+        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 250000>,  // K=8192
     };
 
     // Registry 7: Sweep block size — holds M=N=K=8192,density=25%
     static ProfileCaseFunctionPtr ProfileSweepBlockSizeRegistry[] = {
-        profile_case_parametric_random<8192, 8192, 8192,  32,  32, 25>,  // R=C= 32
-        profile_case_parametric_random<8192, 8192, 8192,  64,  64, 25>,  // R=C= 64
-        profile_case_parametric_random<8192, 8192, 8192, 128, 128, 25>,  // R=C=128
-        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 25>,  // R=C=256
-        // profile_case_parametric_random<8192, 8192, 8192, 512, 512, 25>,  // R=C=512
+        profile_case_parametric_random<8192, 8192, 8192,  32,  32, 250000>,  // R=C= 32
+        profile_case_parametric_random<8192, 8192, 8192,  64,  64, 250000>,  // R=C= 64
+        profile_case_parametric_random<8192, 8192, 8192, 128, 128, 250000>,  // R=C=128
+        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 250000>,  // R=C=256
     };
 
     // Registry 8: Sweep sparsity pattern — holds M=N=K=8192, R=C=256, density=25%
     static ProfileCaseFunctionPtr ProfileSweepSparsityPatternRegistry[] = {
-        profile_case_parametric_row<8192, 8192, 8192, 256, 256, 25>,
-        profile_case_parametric_col<8192, 8192, 8192, 256, 256, 25>,
-        profile_case_parametric_diag<8192, 8192, 8192, 256, 256, 25>,
-        profile_case_parametric_multi_diag<8192, 8192, 8192, 256, 256, 25>,
-        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 25>,
+        profile_case_parametric_row<8192, 8192, 8192, 256, 256, 250000>,
+        profile_case_parametric_col<8192, 8192, 8192, 256, 256, 250000>,
+        profile_case_parametric_multi_diag<8192, 8192, 8192, 256, 256, 250000>,
+        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 250000>,
     };
 
     // Registry 9: Sweep sparsity pattern — holds M=N=K=8192, R=C=256, density=10%
     static ProfileCaseFunctionPtr ProfileSweepSparsityPatternRegistryD10[] = {
-        profile_case_parametric_row<8192, 8192, 8192, 256, 256, 10>,
-        profile_case_parametric_col<8192, 8192, 8192, 256, 256, 10>,
-        profile_case_parametric_diag<8192, 8192, 8192, 256, 256, 10>,
-        profile_case_parametric_multi_diag<8192, 8192, 8192, 256, 256, 10>,
-        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 10>,
+        profile_case_parametric_row<8192, 8192, 8192, 256, 256, 100000>,
+        profile_case_parametric_col<8192, 8192, 8192, 256, 256, 100000>,
+        profile_case_parametric_multi_diag<8192, 8192, 8192, 256, 256, 100000>,
+        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 100000>,
     };
 
 
     // Registry 10: Sweep sparsity pattern — holds M=N=K=8192, R=C=256, density=5%
     static ProfileCaseFunctionPtr ProfileSweepSparsityPatternRegistryD5[] = {
-        profile_case_parametric_row<8192, 8192, 8192, 256, 256, 5>,
-        profile_case_parametric_col<8192, 8192, 8192, 256, 256, 5>,
-        profile_case_parametric_diag<8192, 8192, 8192, 256, 256, 5>,
-        profile_case_parametric_multi_diag<8192, 8192, 8192, 256, 256, 5>,
-        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 5>,
+        profile_case_parametric_row<8192, 8192, 8192, 256, 256, 50000>,
+        profile_case_parametric_col<8192, 8192, 8192, 256, 256, 50000>,
+        profile_case_parametric_multi_diag<8192, 8192, 8192, 256, 256, 50000>,
+        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 50000>,
     };
 
 
     // Registry 11: Sweep sparsity pattern — holds M=N=K=8192, R=C=256, density=50%
     static ProfileCaseFunctionPtr ProfileSweepSparsityPatternRegistryD50[] = {
-        profile_case_parametric_row<8192, 8192, 8192, 256, 256, 50>,
-        profile_case_parametric_col<8192, 8192, 8192, 256, 256, 50>,
-        profile_case_parametric_diag<8192, 8192, 8192, 256, 256, 50>,
-        profile_case_parametric_multi_diag<8192, 8192, 8192, 256, 256, 50>,
-        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 50>,
+        profile_case_parametric_row<8192, 8192, 8192, 256, 256, 500000>,
+        profile_case_parametric_col<8192, 8192, 8192, 256, 256, 500000>,
+        profile_case_parametric_multi_diag<8192, 8192, 8192, 256, 256, 500000>,
+        profile_case_parametric_random<8192, 8192, 8192, 256, 256, 500000>,
+    };
+
+    // Registry 12: Sweep ultra-low density — M=N=K=8192, R=C=32, 30–10000 PPM
+    static ProfileCaseFunctionPtr ProfileSweepUltraLowDensity32Registry[] = {
+        profile_case_parametric_random<8192, 8192, 8192, 32, 32,    30>,  //  0.003%  (~2 blocks / 65536)
+        profile_case_parametric_random<8192, 8192, 8192, 32, 32,   100>,  //  0.01%   (~7 blocks)
+        profile_case_parametric_random<8192, 8192, 8192, 32, 32,   300>,  //  0.03%   (~20 blocks)
+        profile_case_parametric_random<8192, 8192, 8192, 32, 32,  1000>,  //  0.1%    (~66 blocks)
+        profile_case_parametric_random<8192, 8192, 8192, 32, 32,  3000>,  //  0.3%    (~197 blocks)
+        profile_case_parametric_random<8192, 8192, 8192, 32, 32, 10000>,  //  1.0%    (~655 blocks)
+    };
+
+    // Registry 13: Sweep ultra-low density — M=N=K=8192, R=C=64, 60–10000 PPM
+    static ProfileCaseFunctionPtr ProfileSweepUltraLowDensity64Registry[] = {
+        profile_case_parametric_random<8192, 8192, 8192, 64, 64,    60>,  //  0.006%  (~1 block / 16384)
+        profile_case_parametric_random<8192, 8192, 8192, 64, 64,   200>,  //  0.02%   (~3 blocks)
+        profile_case_parametric_random<8192, 8192, 8192, 64, 64,   600>,  //  0.06%   (~10 blocks)
+        profile_case_parametric_random<8192, 8192, 8192, 64, 64,  2000>,  //  0.2%    (~33 blocks)
+        profile_case_parametric_random<8192, 8192, 8192, 64, 64,  6000>,  //  0.6%    (~98 blocks)
+        profile_case_parametric_random<8192, 8192, 8192, 64, 64, 10000>,  //  1.0%    (~164 blocks)
     };
 
     static ProfileCaseFunctionPtr ProfileLargeSparseLargeBlocksRegistry[] = {
-        profile_case_sparse_diagonal_large<256, 256, 25>, // 
-        profile_case_sparse_diagonal_large<512, 512, 25>, // 
-        // profile_case_sparse_diagonal_large<1024, 512, 25>, // 
-        // profile_case_sparse_diagonal_large<2048, 2048, 25>, // 
-        profile_case_sparse_fill_column_large<256, 256, 25>, // 5
-        profile_case_sparse_fill_column_large<512, 512, 25>, // 5
-        // profile_case_sparse_fill_column_large<1024, 1024, 25>, // 5
-        // profile_case_sparse_fill_column_large<2048, 2048, 25>, // 5
-        profile_case_sparse_fill_row_large<256, 256, 25>, // 8
-        profile_case_sparse_fill_row_large<512, 512, 25>, // 8
-        // profile_case_sparse_fill_row_large<1024, 1024, 25>, // 8
-        // profile_case_sparse_fill_row_large<2048, 2048, 25>, // 8
-        profile_case_sparse_fill_random_large<256, 256, 25>, // 11
-        profile_case_sparse_fill_random_large<512, 512, 25>, // 11
-        // profile_case_sparse_fill_random_large<1024, 1024, 25>, // 11
-        // profile_case_sparse_fill_random_large<2048, 2048, 25>, // 11
+        profile_case_sparse_diagonal_large<256, 256, 250000>, //
+        // profile_case_sparse_diagonal_large<512, 512, 250000>, //
+        // profile_case_sparse_diagonal_large<1024, 512, 250000>, //
+        // profile_case_sparse_diagonal_large<2048, 2048, 250000>, //
+        profile_case_sparse_fill_column_large<256, 256, 250000>, // 5
+        // profile_case_sparse_fill_column_large<512, 512, 250000>, // 5
+        // profile_case_sparse_fill_column_large<1024, 1024, 250000>, // 5
+        // profile_case_sparse_fill_column_large<2048, 2048, 250000>, // 5
+        profile_case_sparse_fill_row_large<256, 256, 250000>, // 8
+        // profile_case_sparse_fill_row_large<512, 512, 250000>, // 8
+        // profile_case_sparse_fill_row_large<1024, 1024, 250000>, // 8
+        // profile_case_sparse_fill_row_large<2048, 2048, 250000>, // 8
+        profile_case_sparse_fill_random_large<256, 256, 250000>, // 11
+        // profile_case_sparse_fill_random_large<512, 512, 250000>, // 11
+        // profile_case_sparse_fill_random_large<1024, 1024, 250000>, // 11
+        // profile_case_sparse_fill_random_large<2048, 2048, 250000>, // 11
         profile_case_sparse_fill_lower_triangular_large<256, 256>, // 14
-        profile_case_sparse_fill_lower_triangular_large<512, 512>, // 14
+        // profile_case_sparse_fill_lower_triangular_large<512, 512>, // 14
         // profile_case_sparse_fill_lower_triangular_large<1024, 1024>, // 14
         // profile_case_sparse_fill_lower_triangular_large<2048, 2048>, // 14
     };
@@ -291,13 +306,12 @@ namespace profiling_suite {
     ///////// Parametric Cases /////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     template <uint32_t M = 8192, uint32_t N = 8192, uint32_t K = 8192,
-              uint32_t R = 64, uint32_t C = 64, uint32_t DensityPercent = 25>
+              uint32_t R = 64, uint32_t C = 64, uint32_t DensityPPM = 250000>
     inline ProfileCaseReturnType profile_case_parametric_random() {
         uint32_t block_matrix_height = M / R;
         uint32_t block_matrix_width  = K / C;
-        constexpr float density = DensityPercent / 100.0f;
-        uint32_t divisor = uint32_t(std::round(1.0 / density));
-        uint32_t nblocks = (block_matrix_height * block_matrix_width) / divisor;
+        constexpr float density = DensityPPM / 1000000.0f;
+        uint32_t nblocks = std::max(1u, uint32_t(std::round(block_matrix_height * block_matrix_width * density)));
 
         bsr_matrix<float> bsr(M, K, R, C, nblocks, RAND);
         dense_matrix<float> dense(K, N, RAND);
@@ -305,20 +319,19 @@ namespace profiling_suite {
         bsr_matrix<bfloat16> bsr_bfloat16   = bsr.bfloat16_cast();
         dense_matrix<bfloat16> dense_bfloat16 = dense.bfloat16_cast();
 
-        char buf[100];
-        size_t n = sprintf(buf, "parametric_M%u_N%u_K%u_R%u_C%u_d%u", M, N, K, R, C, DensityPercent);
+        char buf[128];
+        size_t n = sprintf(buf, "parametric_M%u_N%u_K%u_R%u_C%u_dppm%u", M, N, K, R, C, DensityPPM);
         std::string test_name(buf, n);
         return std::make_tuple(bsr_bfloat16, dense_bfloat16, test_name);
     }
 
     template <uint32_t M = 8192, uint32_t N = 8192, uint32_t K = 8192,
-              uint32_t R = 64, uint32_t C = 64, uint32_t DensityPercent = 25>
+              uint32_t R = 64, uint32_t C = 64, uint32_t DensityPPM = 250000>
     inline ProfileCaseReturnType profile_case_parametric_row() {
         uint32_t block_matrix_height = M / R;
         uint32_t block_matrix_width  = K / C;
-        constexpr float density = DensityPercent / 100.0f;
-        uint32_t divisor = uint32_t(std::round(1.0 / density));
-        uint32_t nblocks = (block_matrix_height * block_matrix_width) / divisor;
+        constexpr float density = DensityPPM / 1000000.0f;
+        uint32_t nblocks = std::max(1u, uint32_t(std::round(block_matrix_height * block_matrix_width * density)));
 
         bsr_matrix<float> bsr(M, K, R, C, nblocks, FILL_ROW, RAND);
         dense_matrix<float> dense(K, N, RAND);
@@ -326,20 +339,19 @@ namespace profiling_suite {
         bsr_matrix<bfloat16> bsr_bfloat16   = bsr.bfloat16_cast();
         dense_matrix<bfloat16> dense_bfloat16 = dense.bfloat16_cast();
 
-        char buf[100];
-        size_t n = sprintf(buf, "parametric_row_M%u_N%u_K%u_R%u_C%u_d%u", M, N, K, R, C, DensityPercent);
+        char buf[128];
+        size_t n = sprintf(buf, "parametric_row_M%u_N%u_K%u_R%u_C%u_dppm%u", M, N, K, R, C, DensityPPM);
         std::string test_name(buf, n);
         return std::make_tuple(bsr_bfloat16, dense_bfloat16, test_name);
     }
 
     template <uint32_t M = 8192, uint32_t N = 8192, uint32_t K = 8192,
-              uint32_t R = 64, uint32_t C = 64, uint32_t DensityPercent = 25>
+              uint32_t R = 64, uint32_t C = 64, uint32_t DensityPPM = 250000>
     inline ProfileCaseReturnType profile_case_parametric_col() {
         uint32_t block_matrix_height = M / R;
         uint32_t block_matrix_width  = K / C;
-        constexpr float density = DensityPercent / 100.0f;
-        uint32_t divisor = uint32_t(std::round(1.0 / density));
-        uint32_t nblocks = (block_matrix_height * block_matrix_width) / divisor;
+        constexpr float density = DensityPPM / 1000000.0f;
+        uint32_t nblocks = std::max(1u, uint32_t(std::round(block_matrix_height * block_matrix_width * density)));
 
         bsr_matrix<float> bsr(M, K, R, C, nblocks, FILL_COL, RAND);
         dense_matrix<float> dense(K, N, RAND);
@@ -347,20 +359,19 @@ namespace profiling_suite {
         bsr_matrix<bfloat16> bsr_bfloat16   = bsr.bfloat16_cast();
         dense_matrix<bfloat16> dense_bfloat16 = dense.bfloat16_cast();
 
-        char buf[100];
-        size_t n = sprintf(buf, "parametric_col_M%u_N%u_K%u_R%u_C%u_d%u", M, N, K, R, C, DensityPercent);
+        char buf[128];
+        size_t n = sprintf(buf, "parametric_col_M%u_N%u_K%u_R%u_C%u_dppm%u", M, N, K, R, C, DensityPPM);
         std::string test_name(buf, n);
         return std::make_tuple(bsr_bfloat16, dense_bfloat16, test_name);
     }
 
     template <uint32_t M = 8192, uint32_t N = 8192, uint32_t K = 8192,
-              uint32_t R = 64, uint32_t C = 64, uint32_t DensityPercent = 25>
+              uint32_t R = 64, uint32_t C = 64, uint32_t DensityPPM = 250000>
     inline ProfileCaseReturnType profile_case_parametric_diag() {
         uint32_t block_matrix_height = M / R;
         uint32_t block_matrix_width  = K / C;
-        constexpr float density = DensityPercent / 100.0f;
-        uint32_t divisor = uint32_t(std::round(1.0 / density));
-        uint32_t nblocks = (block_matrix_height * block_matrix_width) / divisor;
+        constexpr float density = DensityPPM / 1000000.0f;
+        uint32_t nblocks = std::max(1u, uint32_t(std::round(block_matrix_height * block_matrix_width * density)));
         // Cap at main diagonal length
         uint32_t diag_len = std::min(block_matrix_height, block_matrix_width);
         nblocks = std::min(nblocks, diag_len);
@@ -371,20 +382,19 @@ namespace profiling_suite {
         bsr_matrix<bfloat16> bsr_bfloat16   = bsr.bfloat16_cast();
         dense_matrix<bfloat16> dense_bfloat16 = dense.bfloat16_cast();
 
-        char buf[100];
-        size_t n = sprintf(buf, "parametric_diag_M%u_N%u_K%u_R%u_C%u_d%u", M, N, K, R, C, DensityPercent);
+        char buf[128];
+        size_t n = sprintf(buf, "parametric_diag_M%u_N%u_K%u_R%u_C%u_dppm%u", M, N, K, R, C, DensityPPM);
         std::string test_name(buf, n);
         return std::make_tuple(bsr_bfloat16, dense_bfloat16, test_name);
     }
 
     template <uint32_t M = 8192, uint32_t N = 8192, uint32_t K = 8192,
-              uint32_t R = 64, uint32_t C = 64, uint32_t DensityPercent = 25>
+              uint32_t R = 64, uint32_t C = 64, uint32_t DensityPPM = 250000>
     inline ProfileCaseReturnType profile_case_parametric_multi_diag() {
         uint32_t block_matrix_height = M / R;
         uint32_t block_matrix_width  = K / C;
-        constexpr float density = DensityPercent / 100.0f;
-        uint32_t divisor = uint32_t(std::round(1.0 / density));
-        uint32_t nblocks = (block_matrix_height * block_matrix_width) / divisor;
+        constexpr float density = DensityPPM / 1000000.0f;
+        uint32_t nblocks = std::max(1u, uint32_t(std::round(block_matrix_height * block_matrix_width * density)));
 
         bsr_matrix<float> bsr(M, K, R, C, nblocks, FILL_MULTI_DIAG, RAND);
         dense_matrix<float> dense(K, N, RAND);
@@ -392,8 +402,8 @@ namespace profiling_suite {
         bsr_matrix<bfloat16> bsr_bfloat16   = bsr.bfloat16_cast();
         dense_matrix<bfloat16> dense_bfloat16 = dense.bfloat16_cast();
 
-        char buf[100];
-        size_t n = sprintf(buf, "parametric_multi_diag_M%u_N%u_K%u_R%u_C%u_d%u", M, N, K, R, C, DensityPercent);
+        char buf[128];
+        size_t n = sprintf(buf, "parametric_multi_diag_M%u_N%u_K%u_R%u_C%u_dppm%u", M, N, K, R, C, DensityPPM);
         std::string test_name(buf, n);
         return std::make_tuple(bsr_bfloat16, dense_bfloat16, test_name);
     }
@@ -426,7 +436,7 @@ namespace profiling_suite {
         return std::make_tuple(bsr_bfloat16, dense_bfloat16, test_name);
     }
 
-    template <uint32_t R = 32, uint32_t C = 32, uint32_t DensityPercent = 25>
+    template <uint32_t R = 32, uint32_t C = 32, uint32_t DensityPPM = 250000>
     inline ProfileCaseReturnType profile_case_sparse_diagonal_large() {
         // matmul params setup
         uint32_t M = 8192;
@@ -452,7 +462,7 @@ namespace profiling_suite {
     }
 
     // TODO: add versions of this which use multiple of block_matrix_height for nblocks
-    template <uint32_t R = 32, uint32_t C = 32, uint32_t DensityPercent = 25>
+    template <uint32_t R = 32, uint32_t C = 32, uint32_t DensityPPM = 250000>
     inline ProfileCaseReturnType profile_case_sparse_fill_column_large() {
         // matmul params setup
         uint32_t M = 8192;
@@ -462,7 +472,7 @@ namespace profiling_suite {
         uint32_t block_matrix_height = M / R;
         uint32_t block_matrix_width = K / C;
 
-        constexpr float density = DensityPercent / 100.0f;
+        constexpr float density = DensityPPM / 1000000.0f;
         uint32_t nblocks = block_matrix_height; 
 
         // nz blocks fill the first column
@@ -479,7 +489,7 @@ namespace profiling_suite {
         return std::make_tuple(bsr_bfloat16, dense_bfloat16, test_name);
     }
 
-    template <uint32_t R = 32, uint32_t C = 32, uint32_t DensityPercent = 25>
+    template <uint32_t R = 32, uint32_t C = 32, uint32_t DensityPPM = 250000>
     inline ProfileCaseReturnType profile_case_sparse_fill_row_large() {
         // matmul params setup
         uint32_t M = 8192;
@@ -505,7 +515,7 @@ namespace profiling_suite {
         return std::make_tuple(bsr_bfloat16, dense_bfloat16, test_name);
     }
 
-    template <uint32_t R = 32, uint32_t C = 32, uint32_t DensityPercent = 25>
+    template <uint32_t R = 32, uint32_t C = 32, uint32_t DensityPPM = 250000>
     inline ProfileCaseReturnType profile_case_sparse_fill_random_large() {
         // matmul params setup
         uint32_t M = 8192;
@@ -515,9 +525,8 @@ namespace profiling_suite {
         uint32_t block_matrix_height = M / R;
         uint32_t block_matrix_width = K / C;
 
-        constexpr float density = DensityPercent / 100.0f;
-        uint32_t divisor = uint32_t(std::round(1.0 / density));
-        uint32_t nblocks = (block_matrix_height * block_matrix_width) / divisor; 
+        constexpr float density = DensityPPM / 1000000.0f;
+        uint32_t nblocks = std::max(1u, uint32_t(std::round(block_matrix_height * block_matrix_width * density))); 
 
         // nz blocks placed randomly
         bsr_matrix<float> bsr(M, K, R, C, nblocks, RAND);
