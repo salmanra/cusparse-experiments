@@ -13,3 +13,7 @@ bash sweep_gemm.sh "$@"
 echo ""
 echo "=== Running SpMM sweep ==="
 bash sweep.sh "$@"
+
+echo ""
+echo "=== Running Ultra-sparse sweep ==="
+bash sweep_ultra.sh "$@"

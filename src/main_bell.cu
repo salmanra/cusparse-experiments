@@ -314,6 +314,8 @@ int main(int argc, char* argv[]) {
         printf(" 10 = Sweep sparsity pattern (d=5%%)\n");
         printf(" 11 = Sweep sparsity pattern (d=50%%)\n");
         printf(" 12 = Large sparse, large blocks\n");
+        printf(" 13 = Ultra-low density (block=32)\n");
+        printf(" 14 = Ultra-low density (block=64)\n");
         return 0;
     }
 
@@ -365,6 +367,14 @@ int main(int argc, char* argv[]) {
         case 12:
             run_registry("ProfileLargeSparseLargeBlocksRegistry",
                          cuda_profiling_suite::ProfileLargeSparseLargeBlocksRegistry);
+            break;
+        case 13:
+            run_registry("ProfileSweepUltraLowDensity32Registry",
+                         cuda_profiling_suite::ProfileSweepUltraLowDensity32Registry);
+            break;
+        case 14:
+            run_registry("ProfileSweepUltraLowDensity64Registry",
+                         cuda_profiling_suite::ProfileSweepUltraLowDensity64Registry);
             break;
         default:
             fprintf(stderr, "Unknown registry ID: %d\n", registry_id);
