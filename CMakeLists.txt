@@ -49,6 +49,24 @@ set_target_properties(spmm_bell PROPERTIES
     CUDA_ARCHITECTURES "70;75;80;86;89;90"
 )
 
+# BSR FP16 Tensor Core variant
+add_executable(spmm_bsr_fp16
+    src/main_bsr_fp16.cu
+)
+
+target_link_libraries(spmm_bsr_fp16
+    CUDA::cusparse
+    CUDA::cudart
+)
+
+target_include_directories(spmm_bsr_fp16 PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+set_target_properties(spmm_bsr_fp16 PROPERTIES
+    CUDA_ARCHITECTURES "70;75;80;86;89;90"
+)
+
 # cuBLAS GEMM profiler
 add_executable(gemm_demo
     src/main_gemm.cu

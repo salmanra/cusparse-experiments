@@ -143,6 +143,19 @@ spmm_bell/fast:
 .PHONY : spmm_bell/fast
 
 #=============================================================================
+# Target rules for targets named spmm_bsr_fp16
+
+# Build rule for target.
+spmm_bsr_fp16: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 spmm_bsr_fp16
+.PHONY : spmm_bsr_fp16
+
+# fast build rule for target.
+spmm_bsr_fp16/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bsr_fp16.dir/build.make CMakeFiles/spmm_bsr_fp16.dir/build
+.PHONY : spmm_bsr_fp16/fast
+
+#=============================================================================
 # Target rules for targets named gemm_demo
 
 # Build rule for target.
@@ -203,6 +216,30 @@ src/main_bell.cu.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bell.dir/build.make CMakeFiles/spmm_bell.dir/src/main_bell.cu.s
 .PHONY : src/main_bell.cu.s
 
+src/main_bsr_fp16.o: src/main_bsr_fp16.cu.o
+.PHONY : src/main_bsr_fp16.o
+
+# target to build an object file
+src/main_bsr_fp16.cu.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bsr_fp16.dir/build.make CMakeFiles/spmm_bsr_fp16.dir/src/main_bsr_fp16.cu.o
+.PHONY : src/main_bsr_fp16.cu.o
+
+src/main_bsr_fp16.i: src/main_bsr_fp16.cu.i
+.PHONY : src/main_bsr_fp16.i
+
+# target to preprocess a source file
+src/main_bsr_fp16.cu.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bsr_fp16.dir/build.make CMakeFiles/spmm_bsr_fp16.dir/src/main_bsr_fp16.cu.i
+.PHONY : src/main_bsr_fp16.cu.i
+
+src/main_bsr_fp16.s: src/main_bsr_fp16.cu.s
+.PHONY : src/main_bsr_fp16.s
+
+# target to generate assembly for a file
+src/main_bsr_fp16.cu.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bsr_fp16.dir/build.make CMakeFiles/spmm_bsr_fp16.dir/src/main_bsr_fp16.cu.s
+.PHONY : src/main_bsr_fp16.cu.s
+
 src/main_gemm.o: src/main_gemm.cu.o
 .PHONY : src/main_gemm.o
 
@@ -237,6 +274,7 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... gemm_demo"
 	@echo "... spmm_bell"
+	@echo "... spmm_bsr_fp16"
 	@echo "... spmm_demo"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
@@ -244,6 +282,9 @@ help:
 	@echo "... src/main_bell.o"
 	@echo "... src/main_bell.i"
 	@echo "... src/main_bell.s"
+	@echo "... src/main_bsr_fp16.o"
+	@echo "... src/main_bsr_fp16.i"
+	@echo "... src/main_bsr_fp16.s"
 	@echo "... src/main_gemm.o"
 	@echo "... src/main_gemm.i"
 	@echo "... src/main_gemm.s"
