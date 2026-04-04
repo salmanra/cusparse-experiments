@@ -3641,6 +3641,38 @@ namespace cuda_profiling_suite {
         frozen_parametric_random<8192, 8192, 8192, 64, 64, 10000>,
     };
 
+    // PatternD5_128
+    static ProfileCaseFunctionPtr PatternD5_128Registry[] = {
+        frozen_parametric_row<8192, 8192, 8192, 128, 128, 50000>,
+        frozen_parametric_col<8192, 8192, 8192, 128, 128, 50000>,
+        frozen_parametric_multi_diag<8192, 8192, 8192, 128, 128, 50000>,
+        frozen_parametric_random<8192, 8192, 8192, 128, 128, 50000>,
+    };
+
+    // PatternD10_128
+    static ProfileCaseFunctionPtr PatternD10_128Registry[] = {
+        frozen_parametric_row<8192, 8192, 8192, 128, 128, 100000>,
+        frozen_parametric_col<8192, 8192, 8192, 128, 128, 100000>,
+        frozen_parametric_multi_diag<8192, 8192, 8192, 128, 128, 100000>,
+        frozen_parametric_random<8192, 8192, 8192, 128, 128, 100000>,
+    };
+
+    // PatternD25_128
+    static ProfileCaseFunctionPtr PatternD25_128Registry[] = {
+        frozen_parametric_row<8192, 8192, 8192, 128, 128, 250000>,
+        frozen_parametric_col<8192, 8192, 8192, 128, 128, 250000>,
+        frozen_parametric_multi_diag<8192, 8192, 8192, 128, 128, 250000>,
+        frozen_parametric_random<8192, 8192, 8192, 128, 128, 250000>,
+    };
+
+    // PatternD50_128
+    static ProfileCaseFunctionPtr PatternD50_128Registry[] = {
+        frozen_parametric_row<8192, 8192, 8192, 128, 128, 500000>,
+        frozen_parametric_col<8192, 8192, 8192, 128, 128, 500000>,
+        frozen_parametric_multi_diag<8192, 8192, 8192, 128, 128, 500000>,
+        frozen_parametric_random<8192, 8192, 8192, 128, 128, 500000>,
+    };
+
     // SweepDensity128
     static ProfileCaseFunctionPtr SweepDensity128Registry[] = {
         frozen_parametric_random<8192, 8192, 8192, 128, 128, 50000>,
@@ -3650,14 +3682,110 @@ namespace cuda_profiling_suite {
         frozen_parametric_random<8192, 8192, 8192, 128, 128, 750000>,
     };
 
+    // PatternUltra32_30
+    static ProfileCaseFunctionPtr PatternUltra32_30Registry[] = {
+        frozen_parametric_row<8192, 8192, 8192, 32, 32, 30>,
+        frozen_parametric_col<8192, 8192, 8192, 32, 32, 30>,
+        frozen_parametric_multi_diag<8192, 8192, 8192, 32, 32, 30>,
+        frozen_parametric_random<8192, 8192, 8192, 32, 32, 30>,
+    };
+
+    // PatternUltra32_100
+    static ProfileCaseFunctionPtr PatternUltra32_100Registry[] = {
+        frozen_parametric_row<8192, 8192, 8192, 32, 32, 100>,
+        frozen_parametric_col<8192, 8192, 8192, 32, 32, 100>,
+        frozen_parametric_multi_diag<8192, 8192, 8192, 32, 32, 100>,
+        frozen_parametric_random<8192, 8192, 8192, 32, 32, 100>,
+    };
+
+    // PatternUltra32_300
+    static ProfileCaseFunctionPtr PatternUltra32_300Registry[] = {
+        frozen_parametric_row<8192, 8192, 8192, 32, 32, 300>,
+        frozen_parametric_col<8192, 8192, 8192, 32, 32, 300>,
+        frozen_parametric_multi_diag<8192, 8192, 8192, 32, 32, 300>,
+        frozen_parametric_random<8192, 8192, 8192, 32, 32, 300>,
+    };
+
+    // PatternUltra32_1000
+    static ProfileCaseFunctionPtr PatternUltra32_1000Registry[] = {
+        frozen_parametric_row<8192, 8192, 8192, 32, 32, 1000>,
+        frozen_parametric_col<8192, 8192, 8192, 32, 32, 1000>,
+        frozen_parametric_multi_diag<8192, 8192, 8192, 32, 32, 1000>,
+        frozen_parametric_random<8192, 8192, 8192, 32, 32, 1000>,
+    };
+
+    // PatternUltra32_3000
+    static ProfileCaseFunctionPtr PatternUltra32_3000Registry[] = {
+        frozen_parametric_row<8192, 8192, 8192, 32, 32, 3000>,
+        frozen_parametric_col<8192, 8192, 8192, 32, 32, 3000>,
+        frozen_parametric_multi_diag<8192, 8192, 8192, 32, 32, 3000>,
+        frozen_parametric_random<8192, 8192, 8192, 32, 32, 3000>,
+    };
+
+    // PatternUltra32_10000
+    static ProfileCaseFunctionPtr PatternUltra32_10000Registry[] = {
+        frozen_parametric_row<8192, 8192, 8192, 32, 32, 10000>,
+        frozen_parametric_col<8192, 8192, 8192, 32, 32, 10000>,
+        frozen_parametric_multi_diag<8192, 8192, 8192, 32, 32, 10000>,
+        frozen_parametric_random<8192, 8192, 8192, 32, 32, 10000>,
+    };
+
+    // PatternUltra64_60
+    static ProfileCaseFunctionPtr PatternUltra64_60Registry[] = {
+        frozen_parametric_row<8192, 8192, 8192, 64, 64, 60>,
+        frozen_parametric_col<8192, 8192, 8192, 64, 64, 60>,
+        frozen_parametric_multi_diag<8192, 8192, 8192, 64, 64, 60>,
+        frozen_parametric_random<8192, 8192, 8192, 64, 64, 60>,
+    };
+
+    // PatternUltra64_200
+    static ProfileCaseFunctionPtr PatternUltra64_200Registry[] = {
+        frozen_parametric_row<8192, 8192, 8192, 64, 64, 200>,
+        frozen_parametric_col<8192, 8192, 8192, 64, 64, 200>,
+        frozen_parametric_multi_diag<8192, 8192, 8192, 64, 64, 200>,
+        frozen_parametric_random<8192, 8192, 8192, 64, 64, 200>,
+    };
+
+    // PatternUltra64_600
+    static ProfileCaseFunctionPtr PatternUltra64_600Registry[] = {
+        frozen_parametric_row<8192, 8192, 8192, 64, 64, 600>,
+        frozen_parametric_col<8192, 8192, 8192, 64, 64, 600>,
+        frozen_parametric_multi_diag<8192, 8192, 8192, 64, 64, 600>,
+        frozen_parametric_random<8192, 8192, 8192, 64, 64, 600>,
+    };
+
+    // PatternUltra64_2000
+    static ProfileCaseFunctionPtr PatternUltra64_2000Registry[] = {
+        frozen_parametric_row<8192, 8192, 8192, 64, 64, 2000>,
+        frozen_parametric_col<8192, 8192, 8192, 64, 64, 2000>,
+        frozen_parametric_multi_diag<8192, 8192, 8192, 64, 64, 2000>,
+        frozen_parametric_random<8192, 8192, 8192, 64, 64, 2000>,
+    };
+
+    // PatternUltra64_6000
+    static ProfileCaseFunctionPtr PatternUltra64_6000Registry[] = {
+        frozen_parametric_row<8192, 8192, 8192, 64, 64, 6000>,
+        frozen_parametric_col<8192, 8192, 8192, 64, 64, 6000>,
+        frozen_parametric_multi_diag<8192, 8192, 8192, 64, 64, 6000>,
+        frozen_parametric_random<8192, 8192, 8192, 64, 64, 6000>,
+    };
+
+    // PatternUltra64_10000
+    static ProfileCaseFunctionPtr PatternUltra64_10000Registry[] = {
+        frozen_parametric_row<8192, 8192, 8192, 64, 64, 10000>,
+        frozen_parametric_col<8192, 8192, 8192, 64, 64, 10000>,
+        frozen_parametric_multi_diag<8192, 8192, 8192, 64, 64, 10000>,
+        frozen_parametric_random<8192, 8192, 8192, 64, 64, 10000>,
+    };
+
     // ── Registry metadata ──
-    static const int NUM_REGISTRIES = 13;
-    static const int RegistrySizes[] = {4, 4, 4, 4, 4, 4, 5, 5, 4, 5, 6, 6, 5};
+    static const int NUM_REGISTRIES = 29;
+    static const int RegistrySizes[] = {4, 4, 4, 4, 4, 4, 5, 5, 4, 5, 6, 6, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4};
     static const char* RegistryNames[] = {
-        "MicrobenchD25", "MicrobenchD5", "PatternD5", "PatternD10", "PatternD25", "PatternD50", "SweepN", "SweepK", "SweepBlockSize", "SweepDensity", "UltraLowDensity32", "UltraLowDensity64", "SweepDensity128",
+        "MicrobenchD25", "MicrobenchD5", "PatternD5", "PatternD10", "PatternD25", "PatternD50", "SweepN", "SweepK", "SweepBlockSize", "SweepDensity", "UltraLowDensity32", "UltraLowDensity64", "SweepDensity128", "PatternD5_128", "PatternD10_128", "PatternD25_128", "PatternD50_128", "PatternUltra32_30", "PatternUltra32_100", "PatternUltra32_300", "PatternUltra32_1000", "PatternUltra32_3000", "PatternUltra32_10000", "PatternUltra64_60", "PatternUltra64_200", "PatternUltra64_600", "PatternUltra64_2000", "PatternUltra64_6000", "PatternUltra64_10000",
     };
     static ProfileCaseFunctionPtr* Registries[] = {
-        MicrobenchD25Registry, MicrobenchD5Registry, PatternD5Registry, PatternD10Registry, PatternD25Registry, PatternD50Registry, SweepNRegistry, SweepKRegistry, SweepBlockSizeRegistry, SweepDensityRegistry, UltraLowDensity32Registry, UltraLowDensity64Registry, SweepDensity128Registry,
+        MicrobenchD25Registry, MicrobenchD5Registry, PatternD5Registry, PatternD10Registry, PatternD25Registry, PatternD50Registry, SweepNRegistry, SweepKRegistry, SweepBlockSizeRegistry, SweepDensityRegistry, UltraLowDensity32Registry, UltraLowDensity64Registry, SweepDensity128Registry, PatternD5_128Registry, PatternD10_128Registry, PatternD25_128Registry, PatternD50_128Registry, PatternUltra32_30Registry, PatternUltra32_100Registry, PatternUltra32_300Registry, PatternUltra32_1000Registry, PatternUltra32_3000Registry, PatternUltra32_10000Registry, PatternUltra64_60Registry, PatternUltra64_200Registry, PatternUltra64_600Registry, PatternUltra64_2000Registry, PatternUltra64_6000Registry, PatternUltra64_10000Registry,
     };
 
 } // namespace cuda_profiling_suite
