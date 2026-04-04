@@ -84,7 +84,7 @@ std::vector<float> run_spmm_bsr(const cuda_bsr_matrix<float>& bsr, const cuda_de
         CUSPARSE_INDEX_32I,          // col indices type
         CUSPARSE_INDEX_BASE_ZERO,
         CUDA_R_16F,                  // FP16 values
-        CUSPARSE_ORDER_COLUMN           // blocks stored in column-major order
+        CUSPARSE_ORDER_COL           // blocks stored in column-major order
     ));
 
     // Dense B: column-major, FP16
