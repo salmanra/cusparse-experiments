@@ -144,41 +144,6 @@ std::vector<float> run_spmm(const cuda_bsr_matrix<float>& bsr, const cuda_dense_
     return iter_times;
 }
 
-template <size_t N>
-void run_registry(const char* registry_name,
-                  cuda_profiling_suite::ProfileCaseFunctionPtr (&registry)[N]) {
-    printf("\n========== %s (%zu cases) ==========\n", registry_name, N);
-    for (size_t i = 0; i < N; i++) {
-        auto [bsr, dense, test_name] = registry[i]();
-        printf("[%zu] %s: M=%zu K=%zu N=%zu R=%zu C=%zu nnz_blocks=%zu (%d iters)\n",
-               i, test_name.c_str(), bsr.H, bsr.W, dense.W, bsr.R, bsr.C, bsr.nblocks, NUM_ITERS);
-        fflush(stdout);
-
-        std::vector<float> iter_times = run_spmm(bsr, dense);
-
-        float flops = 2.0f * bsr.nblocks * bsr.R * bsr.C * dense.W;
-        float bytes = (bsr.nblocks * bsr.R * bsr.C + bsr.nblocks * 2) * sizeof(float) +
-                      (bsr.W * dense.W + bsr.H * dense.W) * sizeof(float);
-
-        float sum_ms = 0.0f, min_ms = iter_times[0];
-        for (int j = 0; j < NUM_ITERS; j++) {
-            sum_ms += iter_times[j];
-            if (iter_times[j] < min_ms) min_ms = iter_times[j];
-        }
-        float avg_ms = sum_ms / NUM_ITERS;
-
-        float avg_tflops = flops / 1e12 / (avg_ms / 1e3);
-        float max_tflops = flops / 1e12 / (min_ms / 1e3);
-        float avg_gbps   = bytes / (avg_ms / 1e3) / 1e9;
-        float max_gbps   = bytes / (min_ms / 1e3) / 1e9;
-
-        printf("  Avg time: %.3f ms  |  Avg TFLOPS: %.3f  |  Avg GB/s: %.3f\n",
-               avg_ms, avg_tflops, avg_gbps);
-        printf("  Min time: %.3f ms  |  Max TFLOPS: %.3f  |  Max GB/s: %.3f\n",
-               min_ms, max_tflops, max_gbps);
-    }
-}
-
 int main(int argc, char* argv[]) {
     int registry_id = -1;  // default: run sanity check only
     if (argc > 1) {
@@ -193,73 +158,56 @@ int main(int argc, char* argv[]) {
         float sum = 0.0f; for (auto t : times) sum += t;
         printf("  Avg time: %.3f ms (%d iters)\n", sum / NUM_ITERS, NUM_ITERS);
         printf("\nUsage: %s <registry_id>\n", argv[0]);
-        printf("  0 = Small sparse cases\n");
-        printf("  1 = Dense ablation\n");
-        printf("  2 = Large sparse cases\n");
-        printf("  4 = Sweep N\n");
-        printf("  5 = Sweep density\n");
-        printf("  6 = Sweep K\n");
-        printf("  7 = Sweep block size\n");
-        printf("  8 = Sweep sparsity pattern (d=25%%)\n");
-        printf("  9 = Sweep sparsity pattern (d=10%%)\n");
-        printf(" 10 = Sweep sparsity pattern (d=5%%)\n");
-        printf(" 11 = Sweep sparsity pattern (d=50%%)\n");
-        printf(" 12 = Large sparse, large blocks\n");
+        for (int i = 0; i < cuda_profiling_suite::NUM_REGISTRIES; i++) {
+            printf("  %2d = %s (%d cases)\n", i,
+                   cuda_profiling_suite::RegistryNames[i],
+                   cuda_profiling_suite::RegistrySizes[i]);
+        }
         return 0;
     }
 
-    switch (registry_id) {
-        case 0:
-            run_registry("ProfileCaseRegistry",
-                         cuda_profiling_suite::ProfileCaseRegistry);
-            break;
-        case 1:
-            run_registry("ProfileDenseAblationRegistry",
-                         cuda_profiling_suite::ProfileDenseAblationRegistry);
-            break;
-        case 2:
-            run_registry("ProfileLargeSparseRegistry",
-                         cuda_profiling_suite::ProfileLargeSparseRegistry);
-            break;
-        case 4:
-            run_registry("ProfileSweepNRegistry",
-                         cuda_profiling_suite::ProfileSweepNRegistry);
-            break;
-        case 5:
-            run_registry("ProfileSweepDensityRegistry",
-                         cuda_profiling_suite::ProfileSweepDensityRegistry);
-            break;
-        case 6:
-            run_registry("ProfileSweepKRegistry",
-                         cuda_profiling_suite::ProfileSweepKRegistry);
-            break;
-        case 7:
-            run_registry("ProfileSweepBlockSizeRegistry",
-                         cuda_profiling_suite::ProfileSweepBlockSizeRegistry);
-            break;
-        case 8:
-            run_registry("ProfileSweepSparsityPatternRegistry",
-                         cuda_profiling_suite::ProfileSweepSparsityPatternRegistry);
-            break;
-        case 9:
-            run_registry("ProfileSweepSparsityPatternRegistryD10",
-                         cuda_profiling_suite::ProfileSweepSparsityPatternRegistryD10);
-            break;
-        case 10:
-            run_registry("ProfileSweepSparsityPatternRegistryD5",
-                         cuda_profiling_suite::ProfileSweepSparsityPatternRegistryD5);
-            break;
-        case 11:
-            run_registry("ProfileSweepSparsityPatternRegistryD50",
-                         cuda_profiling_suite::ProfileSweepSparsityPatternRegistryD50);
-            break;
-        case 12:
-            run_registry("ProfileLargeSparseLargeBlocksRegistry",
-                         cuda_profiling_suite::ProfileLargeSparseLargeBlocksRegistry);
-            break;
-        default:
-            fprintf(stderr, "Unknown registry ID: %d\n", registry_id);
-            return 1;
+    if (registry_id >= cuda_profiling_suite::NUM_REGISTRIES) {
+        fprintf(stderr, "Unknown registry ID: %d (max %d)\n",
+                registry_id, cuda_profiling_suite::NUM_REGISTRIES - 1);
+        return 1;
+    }
+
+    {
+        const char* rname = cuda_profiling_suite::RegistryNames[registry_id];
+        int rsize = cuda_profiling_suite::RegistrySizes[registry_id];
+        cuda_profiling_suite::ProfileCaseFunctionPtr* rfuncs =
+            cuda_profiling_suite::Registries[registry_id];
+
+        printf("\n========== %s (%d cases) ==========\n", rname, rsize);
+        for (int i = 0; i < rsize; i++) {
+            auto [bsr, dense, test_name] = rfuncs[i]();
+            printf("[%d] %s: M=%zu K=%zu N=%zu R=%zu C=%zu nnz_blocks=%zu (%d iters)\n",
+                   i, test_name.c_str(), bsr.H, bsr.W, dense.W, bsr.R, bsr.C, bsr.nblocks, NUM_ITERS);
+            fflush(stdout);
+
+            std::vector<float> iter_times = run_spmm(bsr, dense);
+
+            float flops = 2.0f * bsr.nblocks * bsr.R * bsr.C * dense.W;
+            float bytes = (bsr.nblocks * bsr.R * bsr.C + bsr.nblocks * 2) * sizeof(float) +
+                          (bsr.W * dense.W + bsr.H * dense.W) * sizeof(float);
+
+            float sum_ms = 0.0f, min_ms = iter_times[0];
+            for (int j = 0; j < NUM_ITERS; j++) {
+                sum_ms += iter_times[j];
+                if (iter_times[j] < min_ms) min_ms = iter_times[j];
+            }
+            float avg_ms = sum_ms / NUM_ITERS;
+
+            float avg_tflops = flops / 1e12 / (avg_ms / 1e3);
+            float max_tflops = flops / 1e12 / (min_ms / 1e3);
+            float avg_gbps   = bytes / (avg_ms / 1e3) / 1e9;
+            float max_gbps   = bytes / (min_ms / 1e3) / 1e9;
+
+            printf("  Avg time: %.3f ms  |  Avg TFLOPS: %.3f  |  Avg GB/s: %.3f\n",
+                   avg_ms, avg_tflops, avg_gbps);
+            printf("  Min time: %.3f ms  |  Max TFLOPS: %.3f  |  Max GB/s: %.3f\n",
+                   min_ms, max_tflops, max_gbps);
+        }
     }
 
     printf("\nDone.\n");

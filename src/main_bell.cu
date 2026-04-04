@@ -235,11 +235,10 @@ std::vector<float> run_spmm_bell(const cuda_bsr_matrix<float>& bsr, const cuda_d
     return iter_times;
 }
 
-template <size_t N>
 void run_registry(const char* registry_name,
-                  cuda_profiling_suite::ProfileCaseFunctionPtr (&registry)[N]) {
-    printf("\n========== %s (%zu cases) ==========\n", registry_name, N);
-    for (size_t i = 0; i < N; i++) {
+                  cuda_profiling_suite::ProfileCaseFunctionPtr* registry, int N) {
+    printf("\n========== %s (%d cases) ==========\n", registry_name, N);
+    for (int i = 0; i < N; i++) {
         auto [bsr, dense, test_name] = registry[i]();
 
         if (bsr.R != bsr.C) {
@@ -302,84 +301,23 @@ int main(int argc, char* argv[]) {
         float sum = 0.0f; for (auto t : times) sum += t;
         printf("  Avg time: %.3f ms (%d iters)\n", sum / NUM_ITERS, NUM_ITERS);
         printf("\nUsage: %s <registry_id>\n", argv[0]);
-        printf("  0 = Small sparse cases\n");
-        printf("  1 = Dense ablation\n");
-        printf("  2 = Large sparse cases\n");
-        printf("  4 = Sweep N\n");
-        printf("  5 = Sweep density\n");
-        printf("  6 = Sweep K\n");
-        printf("  7 = Sweep block size\n");
-        printf("  8 = Sweep sparsity pattern (d=25%%)\n");
-        printf("  9 = Sweep sparsity pattern (d=10%%)\n");
-        printf(" 10 = Sweep sparsity pattern (d=5%%)\n");
-        printf(" 11 = Sweep sparsity pattern (d=50%%)\n");
-        printf(" 12 = Large sparse, large blocks\n");
-        printf(" 13 = Ultra-low density (block=32)\n");
-        printf(" 14 = Ultra-low density (block=64)\n");
+        for (int i = 0; i < cuda_profiling_suite::NUM_REGISTRIES; i++) {
+            printf("  %2d = %s (%d cases)\n", i,
+                   cuda_profiling_suite::RegistryNames[i],
+                   cuda_profiling_suite::RegistrySizes[i]);
+        }
         return 0;
     }
 
-    switch (registry_id) {
-        case 0:
-            run_registry("ProfileCaseRegistry",
-                         cuda_profiling_suite::ProfileCaseRegistry);
-            break;
-        case 1:
-            run_registry("ProfileDenseAblationRegistry",
-                         cuda_profiling_suite::ProfileDenseAblationRegistry);
-            break;
-        case 2:
-            run_registry("ProfileLargeSparseRegistry",
-                         cuda_profiling_suite::ProfileLargeSparseRegistry);
-            break;
-        case 4:
-            run_registry("ProfileSweepNRegistry",
-                         cuda_profiling_suite::ProfileSweepNRegistry);
-            break;
-        case 5:
-            run_registry("ProfileSweepDensityRegistry",
-                         cuda_profiling_suite::ProfileSweepDensityRegistry);
-            break;
-        case 6:
-            run_registry("ProfileSweepKRegistry",
-                         cuda_profiling_suite::ProfileSweepKRegistry);
-            break;
-        case 7:
-            run_registry("ProfileSweepBlockSizeRegistry",
-                         cuda_profiling_suite::ProfileSweepBlockSizeRegistry);
-            break;
-        case 8:
-            run_registry("ProfileSweepSparsityPatternRegistry",
-                         cuda_profiling_suite::ProfileSweepSparsityPatternRegistry);
-            break;
-        case 9:
-            run_registry("ProfileSweepSparsityPatternRegistryD10",
-                         cuda_profiling_suite::ProfileSweepSparsityPatternRegistryD10);
-            break;
-        case 10:
-            run_registry("ProfileSweepSparsityPatternRegistryD5",
-                         cuda_profiling_suite::ProfileSweepSparsityPatternRegistryD5);
-            break;
-        case 11:
-            run_registry("ProfileSweepSparsityPatternRegistryD50",
-                         cuda_profiling_suite::ProfileSweepSparsityPatternRegistryD50);
-            break;
-        case 12:
-            run_registry("ProfileLargeSparseLargeBlocksRegistry",
-                         cuda_profiling_suite::ProfileLargeSparseLargeBlocksRegistry);
-            break;
-        case 13:
-            run_registry("ProfileSweepUltraLowDensity32Registry",
-                         cuda_profiling_suite::ProfileSweepUltraLowDensity32Registry);
-            break;
-        case 14:
-            run_registry("ProfileSweepUltraLowDensity64Registry",
-                         cuda_profiling_suite::ProfileSweepUltraLowDensity64Registry);
-            break;
-        default:
-            fprintf(stderr, "Unknown registry ID: %d\n", registry_id);
-            return 1;
+    if (registry_id >= cuda_profiling_suite::NUM_REGISTRIES) {
+        fprintf(stderr, "Unknown registry ID: %d (max %d)\n",
+                registry_id, cuda_profiling_suite::NUM_REGISTRIES - 1);
+        return 1;
     }
+
+    run_registry(cuda_profiling_suite::RegistryNames[registry_id],
+                 cuda_profiling_suite::Registries[registry_id],
+                 cuda_profiling_suite::RegistrySizes[registry_id]);
 
     printf("\nDone.\n");
     return 0;
