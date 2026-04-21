@@ -27,11 +27,11 @@ CMAKE_BUILD_TYPE:STRING=
 //Enable/Disable color output during build.
 CMAKE_COLOR_MAKEFILE:BOOL=ON
 
-//No help, variable specified on the command line.
-CMAKE_CUDA_ARCHITECTURES:UNINITIALIZED=80
+//CUDA architectures
+CMAKE_CUDA_ARCHITECTURES:STRING=52
 
 //CUDA compiler
-CMAKE_CUDA_COMPILER:STRING=/usr/local/cuda-12.5/bin/nvcc
+CMAKE_CUDA_COMPILER:FILEPATH=/usr/local/cuda-12.5/bin/nvcc
 
 //Flags used by the CUDA compiler during all build types.
 CMAKE_CUDA_FLAGS:STRING=

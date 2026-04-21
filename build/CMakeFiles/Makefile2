@@ -64,7 +64,6 @@ CMAKE_BINARY_DIR = /home/rsalman/cusparse-experiments/build
 
 # The main recursive "all" target.
 all: CMakeFiles/spmm_bell.dir/all
-all: CMakeFiles/gemm_demo.dir/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
@@ -73,7 +72,6 @@ preinstall:
 
 # The main recursive "clean" target.
 clean: CMakeFiles/spmm_bell.dir/clean
-clean: CMakeFiles/gemm_demo.dir/clean
 .PHONY : clean
 
 #=============================================================================
@@ -83,7 +81,7 @@ clean: CMakeFiles/gemm_demo.dir/clean
 CMakeFiles/spmm_bell.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bell.dir/build.make CMakeFiles/spmm_bell.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bell.dir/build.make CMakeFiles/spmm_bell.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/rsalman/cusparse-experiments/build/CMakeFiles --progress-num=3,4 "Built target spmm_bell"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/rsalman/cusparse-experiments/build/CMakeFiles --progress-num=1,2 "Built target spmm_bell"
 .PHONY : CMakeFiles/spmm_bell.dir/all
 
 # Build rule for subdir invocation for target.
@@ -101,32 +99,6 @@ spmm_bell: CMakeFiles/spmm_bell.dir/rule
 CMakeFiles/spmm_bell.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bell.dir/build.make CMakeFiles/spmm_bell.dir/clean
 .PHONY : CMakeFiles/spmm_bell.dir/clean
-
-#=============================================================================
-# Target rules for target CMakeFiles/gemm_demo.dir
-
-# All Build rule for target.
-CMakeFiles/gemm_demo.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/gemm_demo.dir/build.make CMakeFiles/gemm_demo.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/gemm_demo.dir/build.make CMakeFiles/gemm_demo.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/rsalman/cusparse-experiments/build/CMakeFiles --progress-num=1,2 "Built target gemm_demo"
-.PHONY : CMakeFiles/gemm_demo.dir/all
-
-# Build rule for subdir invocation for target.
-CMakeFiles/gemm_demo.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/rsalman/cusparse-experiments/build/CMakeFiles 2
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/gemm_demo.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/rsalman/cusparse-experiments/build/CMakeFiles 0
-.PHONY : CMakeFiles/gemm_demo.dir/rule
-
-# Convenience name for target.
-gemm_demo: CMakeFiles/gemm_demo.dir/rule
-.PHONY : gemm_demo
-
-# clean rule for target.
-CMakeFiles/gemm_demo.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/gemm_demo.dir/build.make CMakeFiles/gemm_demo.dir/clean
-.PHONY : CMakeFiles/gemm_demo.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.
