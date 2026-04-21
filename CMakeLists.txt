@@ -10,27 +10,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Find CUDA Toolkit (provides cuSPARSE)
 find_package(CUDAToolkit REQUIRED)
 
-# Create executable
-add_executable(spmm_demo
-    src/main.cu
-)
-
-# Link cuSPARSE library
-target_link_libraries(spmm_demo
-    CUDA::cusparse
-    CUDA::cudart
-)
-
-# Include directories
-target_include_directories(spmm_demo PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-)
-
-# Set CUDA architectures (adjust for your GPU)
-set_target_properties(spmm_demo PROPERTIES
-    CUDA_ARCHITECTURES "70;75;80;86;89;90"
-)
-
 # Blocked-ELL FP16 Tensor Core variant
 add_executable(spmm_bell
     src/main_bell.cu
@@ -46,24 +25,6 @@ target_include_directories(spmm_bell PRIVATE
 )
 
 set_target_properties(spmm_bell PROPERTIES
-    CUDA_ARCHITECTURES "70;75;80;86;89;90"
-)
-
-# BSR FP16 Tensor Core variant
-add_executable(spmm_bsr_fp16
-    src/main_bsr_fp16.cu
-)
-
-target_link_libraries(spmm_bsr_fp16
-    CUDA::cusparse
-    CUDA::cudart
-)
-
-target_include_directories(spmm_bsr_fp16 PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-)
-
-set_target_properties(spmm_bsr_fp16 PROPERTIES
     CUDA_ARCHITECTURES "70;75;80;86;89;90"
 )
 

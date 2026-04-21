@@ -63,9 +63,7 @@ CMAKE_BINARY_DIR = /home/rsalman/cusparse-experiments/build
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/spmm_demo.dir/all
 all: CMakeFiles/spmm_bell.dir/all
-all: CMakeFiles/spmm_bsr_fp16.dir/all
 all: CMakeFiles/gemm_demo.dir/all
 .PHONY : all
 
@@ -74,37 +72,9 @@ preinstall:
 .PHONY : preinstall
 
 # The main recursive "clean" target.
-clean: CMakeFiles/spmm_demo.dir/clean
 clean: CMakeFiles/spmm_bell.dir/clean
-clean: CMakeFiles/spmm_bsr_fp16.dir/clean
 clean: CMakeFiles/gemm_demo.dir/clean
 .PHONY : clean
-
-#=============================================================================
-# Target rules for target CMakeFiles/spmm_demo.dir
-
-# All Build rule for target.
-CMakeFiles/spmm_demo.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_demo.dir/build.make CMakeFiles/spmm_demo.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_demo.dir/build.make CMakeFiles/spmm_demo.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/rsalman/cusparse-experiments/build/CMakeFiles --progress-num=7,8 "Built target spmm_demo"
-.PHONY : CMakeFiles/spmm_demo.dir/all
-
-# Build rule for subdir invocation for target.
-CMakeFiles/spmm_demo.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/rsalman/cusparse-experiments/build/CMakeFiles 2
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/spmm_demo.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/rsalman/cusparse-experiments/build/CMakeFiles 0
-.PHONY : CMakeFiles/spmm_demo.dir/rule
-
-# Convenience name for target.
-spmm_demo: CMakeFiles/spmm_demo.dir/rule
-.PHONY : spmm_demo
-
-# clean rule for target.
-CMakeFiles/spmm_demo.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_demo.dir/build.make CMakeFiles/spmm_demo.dir/clean
-.PHONY : CMakeFiles/spmm_demo.dir/clean
 
 #=============================================================================
 # Target rules for target CMakeFiles/spmm_bell.dir
@@ -131,32 +101,6 @@ spmm_bell: CMakeFiles/spmm_bell.dir/rule
 CMakeFiles/spmm_bell.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bell.dir/build.make CMakeFiles/spmm_bell.dir/clean
 .PHONY : CMakeFiles/spmm_bell.dir/clean
-
-#=============================================================================
-# Target rules for target CMakeFiles/spmm_bsr_fp16.dir
-
-# All Build rule for target.
-CMakeFiles/spmm_bsr_fp16.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bsr_fp16.dir/build.make CMakeFiles/spmm_bsr_fp16.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bsr_fp16.dir/build.make CMakeFiles/spmm_bsr_fp16.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/rsalman/cusparse-experiments/build/CMakeFiles --progress-num=5,6 "Built target spmm_bsr_fp16"
-.PHONY : CMakeFiles/spmm_bsr_fp16.dir/all
-
-# Build rule for subdir invocation for target.
-CMakeFiles/spmm_bsr_fp16.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/rsalman/cusparse-experiments/build/CMakeFiles 2
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/spmm_bsr_fp16.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/rsalman/cusparse-experiments/build/CMakeFiles 0
-.PHONY : CMakeFiles/spmm_bsr_fp16.dir/rule
-
-# Convenience name for target.
-spmm_bsr_fp16: CMakeFiles/spmm_bsr_fp16.dir/rule
-.PHONY : spmm_bsr_fp16
-
-# clean rule for target.
-CMakeFiles/spmm_bsr_fp16.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bsr_fp16.dir/build.make CMakeFiles/spmm_bsr_fp16.dir/clean
-.PHONY : CMakeFiles/spmm_bsr_fp16.dir/clean
 
 #=============================================================================
 # Target rules for target CMakeFiles/gemm_demo.dir
