@@ -168,6 +168,19 @@ gemm_demo/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/gemm_demo.dir/build.make CMakeFiles/gemm_demo.dir/build
 .PHONY : gemm_demo/fast
 
+#=============================================================================
+# Target rules for targets named spmm_bell_sm_profile
+
+# Build rule for target.
+spmm_bell_sm_profile: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 spmm_bell_sm_profile
+.PHONY : spmm_bell_sm_profile
+
+# fast build rule for target.
+spmm_bell_sm_profile/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bell_sm_profile.dir/build.make CMakeFiles/spmm_bell_sm_profile.dir/build
+.PHONY : spmm_bell_sm_profile/fast
+
 src/main.o: src/main.cu.o
 .PHONY : src/main.o
 
@@ -215,6 +228,30 @@ src/main_bell.s: src/main_bell.cu.s
 src/main_bell.cu.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bell.dir/build.make CMakeFiles/spmm_bell.dir/src/main_bell.cu.s
 .PHONY : src/main_bell.cu.s
+
+src/main_bell_sm_profile.o: src/main_bell_sm_profile.cu.o
+.PHONY : src/main_bell_sm_profile.o
+
+# target to build an object file
+src/main_bell_sm_profile.cu.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bell_sm_profile.dir/build.make CMakeFiles/spmm_bell_sm_profile.dir/src/main_bell_sm_profile.cu.o
+.PHONY : src/main_bell_sm_profile.cu.o
+
+src/main_bell_sm_profile.i: src/main_bell_sm_profile.cu.i
+.PHONY : src/main_bell_sm_profile.i
+
+# target to preprocess a source file
+src/main_bell_sm_profile.cu.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bell_sm_profile.dir/build.make CMakeFiles/spmm_bell_sm_profile.dir/src/main_bell_sm_profile.cu.i
+.PHONY : src/main_bell_sm_profile.cu.i
+
+src/main_bell_sm_profile.s: src/main_bell_sm_profile.cu.s
+.PHONY : src/main_bell_sm_profile.s
+
+# target to generate assembly for a file
+src/main_bell_sm_profile.cu.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/spmm_bell_sm_profile.dir/build.make CMakeFiles/spmm_bell_sm_profile.dir/src/main_bell_sm_profile.cu.s
+.PHONY : src/main_bell_sm_profile.cu.s
 
 src/main_bsr_fp16.o: src/main_bsr_fp16.cu.o
 .PHONY : src/main_bsr_fp16.o
@@ -274,6 +311,7 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... gemm_demo"
 	@echo "... spmm_bell"
+	@echo "... spmm_bell_sm_profile"
 	@echo "... spmm_bsr_fp16"
 	@echo "... spmm_demo"
 	@echo "... src/main.o"
@@ -282,6 +320,9 @@ help:
 	@echo "... src/main_bell.o"
 	@echo "... src/main_bell.i"
 	@echo "... src/main_bell.s"
+	@echo "... src/main_bell_sm_profile.o"
+	@echo "... src/main_bell_sm_profile.i"
+	@echo "... src/main_bell_sm_profile.s"
 	@echo "... src/main_bsr_fp16.o"
 	@echo "... src/main_bsr_fp16.i"
 	@echo "... src/main_bsr_fp16.s"

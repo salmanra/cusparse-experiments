@@ -85,5 +85,25 @@ set_target_properties(gemm_demo PROPERTIES
     CUDA_ARCHITECTURES "70;75;80;86;89;90"
 )
 
+# Blocked-ELL SM utilization profiler (CUPTI-based)
+add_executable(spmm_bell_sm_profile
+    src/main_bell_sm_profile.cu
+)
+
+target_link_libraries(spmm_bell_sm_profile
+    CUDA::cusparse
+    CUDA::cudart
+    CUDA::cupti
+)
+
+target_include_directories(spmm_bell_sm_profile PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${CUDAToolkit_INCLUDE_DIRS}
+)
+
+set_target_properties(spmm_bell_sm_profile PROPERTIES
+    CUDA_ARCHITECTURES "70;75;80;86;89;90"
+)
+
 # Optional: Enable verbose output during build
 set(CMAKE_VERBOSE_MAKEFILE OFF)

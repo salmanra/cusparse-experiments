@@ -1,0 +1,21 @@
+==PROF== Connected to process 819003 (/home/rsalman/cusparse-experiments/build/spmm_bell)
+GPU: NVIDIA GeForce RTX 4090 (compute 8.9)
+Tensor Core FP16 SpMM: ENABLED
+
+========== MicrobenchD25 (4 cases) ==========
+[0] parametric_M8192_N8192_K8192_R32_C32_dppm250000: M=8192 K=8192 N=8192 block=32 nnz_blocks=16384 (10 iters)
+==ERROR== ERR_NVGPUCTRPERM - The user does not have permission to access NVIDIA GPU Performance Counters on the target device 0. For instructions on enabling permissions and to get more information see https://developer.nvidia.com/ERR_NVGPUCTRPERM
+  Avg time: 3.805 ms  |  Avg TFLOPS: 72.241  |  Avg GB/s: 79.384
+  Min time: 3.682 ms  |  Max TFLOPS: 74.648  |  Max GB/s: 82.029
+[1] parametric_M8192_N8192_K8192_R64_C64_dppm250000: M=8192 K=8192 N=8192 block=64 nnz_blocks=4096 (10 iters)
+  Avg time: 5.391 ms  |  Avg TFLOPS: 50.989  |  Avg GB/s: 56.021
+  Min time: 5.290 ms  |  Max TFLOPS: 51.964  |  Max GB/s: 57.092
+[2] parametric_M8192_N8192_K8192_R128_C128_dppm250000: M=8192 K=8192 N=8192 block=128 nnz_blocks=1024 (10 iters)
+  Avg time: 3.225 ms  |  Avg TFLOPS: 85.239  |  Avg GB/s: 93.648
+  Min time: 3.169 ms  |  Max TFLOPS: 86.727  |  Max GB/s: 95.282
+[3] parametric_M8192_N8192_K8192_R256_C256_dppm250000: M=8192 K=8192 N=8192 block=256 nnz_blocks=256 (10 iters)
+  Avg time: 3.007 ms  |  Avg TFLOPS: 91.399  |  Avg GB/s: 100.415
+  Min time: 2.855 ms  |  Max TFLOPS: 96.282  |  Max GB/s: 105.779
+
+Done.
+==PROF== Disconnected from process 819003
