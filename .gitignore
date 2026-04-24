@@ -1,0 +1,14 @@
+# CMake build artifacts
+build/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.o
+*.obj
+
+# Compiled executables
+spmm_bell
+
+# Claude Code local settings
+.claude/settings.local.json
