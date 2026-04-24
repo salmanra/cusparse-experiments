@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Run from repo root: produces results/{ultra,semi}_sparse_results.csv
+
+SPMM_BIN="${SPMM_BIN:-./build/spmm_bell}"
+RESULTS_DIR="${RESULTS_DIR:-results}"
+mkdir -p "$RESULTS_DIR"
+
 # Start MPS daemon so CUDA_MPS_ACTIVE_THREAD_PERCENTAGE takes effect
 nvidia-cuda-mps-control -d
 export CUDA_MPS_ACTIVE_THREAD_PERCENTAGE=40
@@ -16,7 +22,7 @@ run_sweep() {
 
     for REG in "${REGISTRIES[@]}"; do
         echo "Running Registry $REG ..."
-        OUTPUT=$(./spmm_bell $REG)
+        OUTPUT=$("$SPMM_BIN" $REG)
         echo "$OUTPUT"
 
         while IFS= read -r line; do
@@ -54,8 +60,8 @@ run_sweep() {
 }
 
 echo "=== Running ultra-sparse sweep ==="
-run_sweep "ultra_sparse_results.csv" 17 19 21 23 25 27 28
+run_sweep "$RESULTS_DIR/ultra_sparse_results.csv" 17 19 21 23 25 27 28
 
 echo ""
 echo "=== Running semi-sparse sweep ==="
-run_sweep "semi_sparse_results.csv" 2 3 4 5 13 14 15 16
+run_sweep "$RESULTS_DIR/semi_sparse_results.csv" 2 3 4 5 13 14 15 16
