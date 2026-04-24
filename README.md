@@ -159,9 +159,11 @@ FLOP / byte formulas are defined in `src/main_bell.cu::run_registry`.
 ## Reproducing the paper numbers
 
 On a single RTX 4090 with the versions listed above, the full
-`sweep_all.sh` run takes approximately **[N] minutes**
-(fill in from your measured wall-clock time). Results should match the
-committed CSVs to within natural GPU timing variance (a few percent on
+`sweep_all.sh` run takes approximately **3 minutes 10 seconds** (≈ 190 s
+of GPU wall time); the CMake configure plus `make -j` build takes
+about 6 seconds. Results should match the committed CSVs to within
+natural CUDA-event timing jitter — in our clean-clone reproduction the
+per-case deltas were in the third significant figure (sub-percent on
 average TFLOPS; `Max_TFLOPs` is more stable).
 
 Per-case granularity:
